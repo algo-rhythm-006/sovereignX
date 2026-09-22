@@ -1,4 +1,4 @@
-import LandingPadPage from "../../Landing Pad Page/index";
+import LandingPadPage from "../../landing-page/index";
 
 export default function Home() {
   return <LandingPadPage />;
