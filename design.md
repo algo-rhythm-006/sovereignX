@@ -1,264 +1,259 @@
-# SovereignX / SentinelX Design System
+# SovereignX Design System
 
-## 1. Product Design Direction
+## 01. Product Identity
 
-SovereignX / SentinelX is a **Premium autonomous cybersecurity / DevSecOps AI platform designed for serious technical users.**
+SovereignX is an **Enterprise-grade Agentic AI Workbench for confidential data operating inside controlled infrastructure.**
 
-The visual identity communicates:
-- Security and Privacy
-- Intelligence and Autonomy
-- Reliability and Precision
-- Technical sophistication
-- Modern engineering
+The visual interface communicates:
+- **Privacy & Sovereignty:** Your data never has to leave your environment.
+- **Trust & Security:** Auditable execution and local intelligence.
+- **Control & Reliability:** Human-in-the-loop oversight and deterministic interfaces.
+- **Enterprise Readiness:** Technical sophistication for serious industrial, government, and defense users.
 
-**Aesthetic:** High-end developer tooling mixed with an advanced command center. It avoids generic SaaS templates, gaming UI, or overly colorful startup designs.
+The product feels like **serious infrastructure**, a private AI command center rather than a consumer chatbot.
 
-## 2. Core Visual Philosophy
+## 02. Core Design Philosophy
 
-### 2.1 Dark-First
-The application is fundamentally dark. Dark surfaces dominate the interface. Contrast is achieved through surface elevation, subtle borders, typography, intentional glow, and motion—rather than excessive bright surfaces.
+**"Your data never has to leave your environment."**
 
-### 2.2 Rectangular / Technical Geometry
-The UI relies on structured geometry:
-- Rectangular containers with sharp or minimally rounded corners.
-- Technical panel geometry, thin borders, grid structures, and dividers.
-- Avoid excessive border radius, giant rounded cards, or bubble-like interfaces.
+The experience is:
+- **Premium:** Refined typography, exact spacing, and purposeful motion.
+- **Technical:** Structured grids, monospaced metadata, and thin borders.
+- **Minimal & Dark:** Calm and intelligent without visual noise or excessive neon.
+- **Secure:** Clear hierarchical boundaries and semantic status indicators.
 
-**Border Radius Scale:**
-- `0px` - Full sharp (technical edges)
-- `2px` - Micro elements (checkboxes)
-- `4px` - Small interactive elements (inputs, standard buttons)
-- `6px` - Medium cards
-- `10px` (0.625rem) - Maximum radius for large elevated panels and primary modals. (Matches `--radius`).
+**Prohibited Aesthetics:** Generic SaaS, consumer chatbots, crypto dashboards, neon hacker UI, excessive glassmorphism, or colorful gradients.
 
-### 2.3 Minimal Color Language
-Colors are strictly controlled. The system uses a four-color dark palette based on deep space and technical blue. Random colors in individual components are prohibited.
+## 03. Brand Principle
 
-## 3. Color System
+- **SOVEREIGN:** Data remains under organizational control.
+- **X:** Execution layer / intelligence layer / agentic workflows.
 
-### 3.1 Design Tokens
+**Visual Pipeline:**
+`DATA` → `LOCAL MODEL` → `AGENTS` → `TOOLS` → `CONTROLLED WORKFLOW` → `AUDITABLE OUTPUT`
 
-**Background & Surfaces:**
-- `--background`: `#030406` (Deep technical black/blue - base canvas)
-- `--foreground`: `#F8FAFC` (Slate 50 - Primary text)
-- `--card` & `--popover`: `#0A0D14` (Elevated surface level 1)
-- `--secondary` & `--muted`: `#1E293B` (Slate 800 - Elevated surface level 2 / subtle backgrounds)
-- `--sidebar`: `#050A0F` (Distinct ultra-dark surface for sidebars)
+## 04. Color System
+
+Based on the existing Tailwind v4 implementation (`globals.css`), SovereignX uses a strict dark-first palette.
+
+**Backgrounds & Surfaces:**
+- `Background`: `#030406` (Deep technical black - base canvas)
+- `Surface`: `#0A0D14` (Elevated level 1 - standard cards, panels, popovers)
+- `Surface Secondary`: `#050A0F` (Distinct surface for sidebars and navigation)
+- `Surface Hover`: `#1E293B` (Subtle highlight for interactive surfaces)
+
+**Borders:**
+- `Border Default`: `#1E293B` (Slate 800 - structuring grids and cards)
+- `Border Subtle`: `#0F172A` (Slate 900)
+- `Border Strong`: `#334155` (Slate 700 - focus states, active borders)
+
+**Typography:**
+- `Primary Text`: `#F8FAFC` (Slate 50 - headings, primary data)
+- `Secondary Text`: `#E2E8F0` (Slate 200 - body copy)
+- `Muted Text`: `#94A3B8` (Slate 400 - metadata, disabled states, timestamps)
 
 **Accents & Interaction:**
-- `--primary`: `#00A3FF` (Vibrant technical blue - Main action, glow, focus)
-- `--primary-foreground`: `#030406`
-- `--accent`: `#1E293B` (Hover states)
-- `--accent-foreground`: `#00A3FF` (Active text)
-- `--ring`: `#00A3FF` (Focus rings)
+- `Primary Accent`: `#00A3FF` (Vibrant technical blue - main action, glow, focus)
+- `Accent Hover`: `#2563EB` (Blue 600)
+- `Accent Muted`: `rgba(0, 163, 255, 0.15)` (Subtle backgrounds for active items)
 
 **Status & Semantic:**
-- `--destructive`: `#EF4444` (Critical actions, errors)
-- `--success`: `#10B981` (Emerald 500 - Completion, passing tests)
-- `--warning`: `#F59E0B` (Amber 500 - Requires attention, pending)
-- `--info`: `#00A3FF` (Informational, system logs)
+- `Success`: `#10B981` (Emerald 500 - completed workflows, healthy agents)
+- `Warning`: `#F59E0B` (Amber 500 - requires approval, awaiting input)
+- `Error`: `#EF4444` (Red 500 - failures, disconnected models, security alerts)
+- `Info`: `#3B82F6` (Blue 500 - system logs, running states)
 
-### 3.2 Color Hierarchy
-- **Dominant:** Deep backgrounds (`#030406`, `#0A0D14`).
-- **Interaction:** Vibrant blue (`#00A3FF`) is reserved for primary actions, active states, and subtle glows (e.g., `border-glow-button`).
-- **Gradients/Glows:** Permitted only for hero sections, active AI states, or high-tier elements (e.g., `liquid-glass-card`, `shader-gradient-bg`). Must be subtle and tied to interaction.
+*Colors must communicate hierarchy. Never use status colors purely as decoration.*
 
-## 4. Typography System
+## 05. Typography System
 
-The typography feels modern, technical, and highly legible.
+The typography is technical, premium, and readable.
 
-### 4.1 Font Family
-- **Primary Font (Sans):** `Geist Sans` (System fallback: Inter, sans-serif) - Used for all UI text, buttons, and standard copy.
-- **Display Font:** `Google Sans` / `Outfit` - Used strictly for large hero headings and marketing impact.
-- **Monospace (Mono):** `Geist Mono` - Used for logs, code blocks, agent telemetry, and technical metadata.
+**Fonts:**
+- **Primary:** `Geist Sans` (System fallback: Inter, sans-serif) - used for all UI text, buttons, and standard copy.
+- **Display:** `Google Sans` / `Outfit` - used strictly for hero headings on the landing page.
+- **Monospace:** `Geist Mono` - used for technical data, paths, identifiers, and logs.
 
-### 4.2 Typography Scale
-- **Display:** `text-6xl` to `text-8xl` (font-display, tight tracking `tracking-tight`, leading `0.92`) - Hero sections only.
-- **H1 (Page Heading):** `text-4xl`, font-semibold, tracking-tight.
-- **H2 (Section Heading):** `text-2xl`, font-medium, text-foreground.
-- **H3 (Card Heading):** `text-lg`, font-medium, text-foreground.
-- **Body Large:** `text-base`, text-foreground/90, leading-relaxed.
-- **Body Standard:** `text-sm`, text-muted-foreground (`#94A3B8`), leading-normal.
-- **Small/Caption:** `text-xs`, text-muted-foreground/80.
-- **Mono / Code:** `text-xs` or `text-sm`, font-mono, tracking-widest, uppercase for labels.
+**Scale:**
+- **Display (Hero):** `text-6xl` to `text-8xl` (60px-96px), tracking-tight (`-0.02em`), leading `0.92`.
+- **H1:** `text-4xl` (36px), font-semibold, tracking-tight (`-0.02em`), leading-tight.
+- **H2:** `text-2xl` (24px), font-medium, leading-tight.
+- **H3:** `text-lg` (18px), font-medium, leading-snug.
+- **Body Large:** `text-base` (16px), text-secondary, leading-relaxed (`1.6`).
+- **Body:** `text-sm` (14px), text-muted, leading-normal (`1.5`).
+- **Caption / Metadata:** `text-xs` (12px), text-muted, uppercase tracking-wider.
+- **Terminal / Code:** `text-xs` (12px), `font-mono`, tracking-widest.
 
-## 5. Spacing System
+## 06. Monospace System
 
-A strict 4px/8px baseline grid is enforced.
-- `4px` (gap-1): Micro spacing (icons to text).
-- `8px` (gap-2): Tight component spacing (form labels to inputs).
-- `16px` (gap-4): Standard UI spacing (padding inside buttons, small cards).
-- `24px` (gap-6): Medium layout spacing (between form groups).
-- `32px` (gap-8): Section inner spacing (padding inside large panels).
-- `64px` (gap-16): Distinct layout blocks.
-- `96px` (gap-24) to `128px`: Major section spacing on marketing pages.
+Monospace (`Geist Mono`) must complement primary typography and is strictly used for:
+- Repository paths (`/var/data/confidential`)
+- Model names (`llama-3-8b-instruct`)
+- Agent identifiers (`agent_0x4f2`)
+- System logs & Terminal output
+- Execution IDs (`exec_99a8b`)
+- Timestamps (`[14:32:01]`)
 
-## 6. Layout System
+## 07. Spacing System
 
-- **Maximum Content Width:** `1440px` (Marketing) / `100%` (Dashboard with sidebar).
-- **Page Gutters:** 
-  - Mobile: `16px` (px-4)
-  - Tablet: `24px` (px-6)
-  - Desktop: `48px` (px-12)
-- **Breakpoints:** Mobile (sm: 640px), Tablet (md: 768px), Laptop (lg: 1024px), Desktop (xl: 1280px), Large Desktop (2xl: 1400px).
+A strict 4px/8px baseline grid:
+- `4px` (`gap-1` / `p-1`): Micro spacing (icons to text).
+- `8px` (`gap-2` / `p-2`): Tight component spacing (labels to inputs).
+- `12px` (`gap-3` / `p-3`): Inner card padding (small).
+- `16px` (`gap-4` / `p-4`): Standard UI spacing.
+- `24px` (`gap-6` / `p-6`): Medium layout spacing (between form groups, panel padding).
+- `32px` (`gap-8` / `p-8`): Section inner spacing.
+- `48px` (`gap-12` / `p-12`): Major component separation.
+- `64px` (`gap-16` / `p-16`): Landing page layout blocks.
+- `96px` to `128px`: Major marketing section spacing.
 
-## 7. Grid System
+## 08. Border & Radius System
 
-- **Desktop:** 12-column grid (`grid-cols-12`).
-- **Dashboard:** CSS Grid for main areas (Sidebar fixed width, Main Content flexible).
-- **Bento Layouts:** Used for feature cards (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3` or varying spans like `col-span-2`).
-- **Gap Size:** `gap-4` or `gap-6` standard.
+**Borders:**
+Thin, precise, low-noise. Default to `1px solid #1E293B`. Use `border-t`, `border-b` for dividers to avoid heavy card outlines everywhere.
 
-## 8. Container System
+**Border Radius:**
+Restrained geometry. No excessive pill shapes.
+- `0px`: Full sharp (technical edges, terminal panels)
+- `2px` (`rounded-sm`): Micro elements (checkboxes)
+- `4px` (`rounded`): Small interactive elements (inputs, tags)
+- `6px` (`rounded-md`): Standard buttons, small cards
+- `10px` (`rounded-lg` / `0.625rem`): Maximum radius for large elevated panels.
 
-- **Page Container:** Fills available viewport.
-- **Section Container:** Max-width wrappers (`max-w-[1440px]`).
-- **Panel (Dashboard Modules, Logs):**
-  - Background: `bg-card` (`#0A0D14`)
-  - Border: `border-border` (`#1E293B`), 1px solid.
-  - Radius: `rounded-lg` (10px max).
-  - Shadow: None by default. Subtle inner glow on hover.
+## 09. Layout & Grid System
 
-## 9. Navigation System
+- **Maximum Width:** `1440px` (Landing) / `100%` (Dashboard with sidebar).
+- **Page Gutters:** Mobile `16px`, Tablet `24px`, Desktop `48px`.
+- **Desktop Grid:** 12-column CSS grid (`grid-cols-12`). `gap-6`.
+- **Dashboard Layout:** Fixed sidebar (`w-64`), flexible main content (`flex-1`).
+- **Responsive:** Mobile transforms to 1-column layout. Avoid horizontal overflow.
 
-**Global Navbar:**
+## 10. Container System
+
+- **Page Container:** `w-full min-h-screen bg-background`.
+- **Section Container:** `max-w-[1440px] mx-auto px-6 md:px-12`.
+- **Panel (Dashboard Modules):** `bg-[#0A0D14] border border-[#1E293B] rounded-[10px] p-6`.
+- **Command Panel:** Minimal styling, sticky top or bottom, high contrast borders.
+- **Terminal / Data Panel:** `bg-[#030406]` (darker than surface), sharp corners (`0px`), monospace typography.
+
+## 11. Navigation (Navbar & Sidebar)
+
+**Navbar (Landing):**
 - **Height:** 64px (`h-16`).
-- **Background:** Transparent to blurred (`backdrop-blur-md bg-background/50`) when sticky.
-- **Typography:** `text-sm`, font-medium.
-- **Active State:** Text changes to `--foreground`, subtle `--primary` underline or dot indicator.
-- **Animation:** Smooth transform on scroll, elements slide in.
+- **Style:** Minimal, premium, transparent to blurred (`backdrop-blur-md bg-background/50`) on scroll.
+- **Active State:** Text changes to `#F8FAFC`, subtle `#00A3FF` indicator.
 
-## 10. Button System
+**Sidebar (Workbench):**
+- **Width:** 256px (`w-64`).
+- **Background:** `#050A0F`.
+- **Sections (if applicable):** Workspaces, Documents, Agents, Models, Workflows, Runs, Audit Logs, Settings.
+- **Active State:** `bg-[#1E293B] text-[#00A3FF] border-r-2 border-[#00A3FF]`.
 
-- **Height:** Standard `40px` (`h-10`), Small `32px` (`h-8`), Large `48px` (`h-12`).
-- **Radius:** `rounded-md` (6px).
-- **Styles:**
-  - **Primary:** `bg-primary text-primary-foreground`.
-  - **Secondary / Command Button:** `bg-secondary text-secondary-foreground border border-border`. (Used for Run Scan, Deploy Agent).
-  - **Ghost:** Transparent background, `hover:bg-accent hover:text-accent-foreground`.
-  - **Destructive:** `bg-destructive text-white`.
-  - **Icon Button:** Square aspect ratio (`w-10 h-10`), icon centered.
-- **Motion:** Scale down slightly on press (`active:scale-95`), background crossfade on hover.
+## 12. Workbench & UI Patterns
 
-## 11. Card System
+The core application is a **secure AI operating environment**.
 
-Standardized across the app to prevent inconsistency.
-- **Structure:** `CardHeader`, `CardTitle`, `CardContent`, `CardFooter`.
-- **Background:** `bg-card`.
-- **Border:** `border border-border`.
-- **Radius:** `rounded-lg`.
-- **Hover:** For interactive cards (e.g., Repositories), border color shifts to `border-primary/50`, and a subtle `box-shadow` or background gradient mask activates (e.g., `liquid-glass-card`).
+**Document / Data Interface:**
+- *Upload:* Premium drag-and-drop. States: `Uploading`, `OCR Processing`, `Indexed`, `Ready`, `Restricted`.
+- *Previews:* Never expose sensitive content unnecessarily. Use redaction patterns (`██████`).
 
-## 12. Dashboard Design System
+**AI Agent System:**
+- *UI:* Agent Name (Mono), Role, Model, Status, Current Task.
+- *States:* `Idle`, `Initializing`, `Thinking`, `Executing`, `Awaiting Approval`, `Completed`.
+- *Motion:* Use subtle pulsing or typing indicators for active execution. No cartoon characters.
 
-The dashboard acts as a **Security Command Center**.
-- **Sidebar:** Left-aligned, `w-64`, collapsible to icon-only. Darker background (`#050A0F`).
-- **Top Bar:** Breadcrumbs, workspace selector, and global actions.
-- **Priority:** 
-  1. System state (Scanning, Idle).
-  2. Important actions (Run Test).
-  3. Security Findings / Logs.
-- **Layout:** High information density. Tense, technical, and precise.
+**Agentic Workflow Visualization:**
+- Use nodes and connectors to represent pipelines (`Planner` → `Research` → `Analysis`).
+- Visual language must feel like infrastructure orchestration.
 
-## 13. Security Status Language
+**Model & Local Status:**
+- Clearly communicate execution boundaries: `LOCAL INFERENCE RUNNING`, `AIR-GAPPED`, `OLLAMA / GPU`.
+- Avoid fake security decoration. Use clear semantic tags.
 
-States are represented by Color + Icon + Typography (never color alone).
-- **Idle:** Gray / Muted (`--muted-foreground`). Icon: Pause/Dot.
-- **Scanning / Running:** Blue (`--primary`). Icon: Spinner / Pulse animation.
-- **Completed / Secure:** Green (`--success`). Icon: Check circle.
-- **Requires Attention / Warning:** Amber (`--warning`). Icon: Triangle alert.
-- **Failed / Blocked:** Red (`--destructive`). Icon: X / Shield breach.
+**Approval / Human-in-the-loop:**
+- Workflows that require approval show a `Warning` (Amber) state: `Awaiting Human Input`.
+- Dangerous actions require confirmation modals.
 
-## 14. Red Team / Blue Team Visual System
+**Audit & Terminal Logs:**
+- *Format:* `[10:42:03] SYSTEM Workspace initialized`
+- *Typography:* `Geist Mono`, `text-xs`.
+- *Features:* Auto-scrolling, level filtering (INFO, ERROR, SUCCESS).
 
-Both operate in the same platform but require visual distinction.
-- **Red Team (Offensive):** Sharp angular UI elements, subtle red/magenta accents in visualizations. Represents exploits, payloads, adversarial action.
-- **Blue Team (Defensive):** Shield motifs, cyan/blue accents, solid borders. Represents hardening, detection, and mitigation.
-- **Note:** Keep it professional. No gaming graphics. It remains enterprise software.
+**Command Center & Metrics:**
+- Prioritize: System status, Active workflows, Agent activity.
+- Avoid vanity metrics. Use cards for: Processing time, Active agents, Local inference load.
 
-## 15. AI Agent Design System
+## 13. Components
 
-Agents are autonomous entities with states.
-- **Components:** Agent Name (Mono), Role, Current Task, Progress Bar.
-- **States:** 
-  - *Thinking/Working:* Subtle pulse or `blob-breathe` animation. Typing indicators.
-  - *Idle:* Static, reduced opacity.
-  - *Completed:* Distinct timestamp.
+**Tables:**
+- *Header:* Uppercase, `text-xs`, tracking-wider, `text-[#94A3B8]`. Border bottom only.
+- *Row:* `border-b border-[#1E293B]`, `hover:bg-[#1E293B]/50` transition.
 
-## 16. Terminal / Log System
+**Buttons:**
+- *Height:* Standard `40px` (`h-10`).
+- *Radius:* `6px` (`rounded-md`).
+- *Primary:* `bg-[#00A3FF] text-[#030406]`.
+- *Command (Start/Deploy):* `bg-[#1E293B] border border-[#334155] text-[#F8FAFC]`.
+- *Destructive:* `bg-[#EF4444] text-white`.
 
-Professional developer infrastructure logs.
-- **Typography:** `Geist Mono`, `text-xs`.
-- **Format:** `[TIMESTAMP] [LEVEL] [AGENT] MESSAGE`.
-- **Colors per level:** 
-  - `INFO`: Muted text.
-  - `DEBUG`: Gray.
-  - `WARNING`: Amber.
-  - `ERROR`: Red.
-  - `SUCCESS`: Green.
-- **Behavior:** Auto-scrolling, collapsible groups, syntax highlighting for payloads.
+**Forms:**
+- *Inputs:* `bg-[#030406] border-[#1E293B] rounded-md h-10`.
+- *Focus:* `focus:ring-1 focus:ring-[#00A3FF] border-[#00A3FF]`.
+- *Labels:* `text-sm font-medium text-[#E2E8F0]`, above inputs.
 
-## 17. Table System
+**Modals:**
+- *Overlay:* `bg-[#030406]/80 backdrop-blur-sm`.
+- *Panel:* `bg-[#0A0D14] border border-[#1E293B] rounded-[10px] shadow-2xl`.
 
-- **Header:** Uppercase, `text-xs`, tracking-wider, `text-muted-foreground`. Border bottom.
-- **Row:** `border-b border-border`, `hover:bg-muted/50` transition.
-- **Mobile:** Transforms into stacked cards on small screens.
+**Toasts:**
+- Bottom-right. Dark background, colored left border indicating severity (Green/Amber/Red/Blue).
 
-## 18. Form System
+**Empty & Loading States:**
+- *Empty:* Informative, centered muted icon, short title, helper text, CTA. No huge illustrations.
+- *Loading:* Meaningful progress bars or structural skeletons (`pulsing #1E293B`). Avoid full-page spinners.
 
-- **Inputs:** `bg-background`, `border-border`, `rounded-md`, `h-10`.
-- **Focus:** `focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background`.
-- **Labels:** `text-sm font-medium`, placed above inputs.
+## 14. Animation & Motion Philosophy
 
-## 19. Modal / Dialog System
+Motion communicates system state and data movement, never making the app feel like a game.
 
-- **Overlay:** `bg-background/80 backdrop-blur-sm`.
-- **Panel:** `bg-card border border-border rounded-lg shadow-2xl`.
-- **Motion:** Subtle fade-in and scale-up (`duration-200 ease-out`).
+**Timing:**
+- Micro (Buttons/Hover): `150ms`.
+- Standard (Modals/Tabs): `300ms`.
+- Section Reveal: `600ms`.
+- Easing: Smooth ease-out (`cubic-bezier(0.16, 1, 0.3, 1)` or GSAP `power3.out`).
 
-## 20. Toast / Notification System
+**GSAP Rules:**
+- Use `gsap.context()` in React.
+- Always clean up `ScrollTrigger` in `useEffect` return.
+- Animate `transform` and `opacity` only. Never animate `layout` properties, `box-shadow`, or `filter: blur` continuously.
+- Do NOT use `mix-blend-screen` combined with GSAP scroll scrubbing on video elements (causes severe lag).
 
-- **Position:** Bottom-right.
-- **Style:** Dark background, colored left border indicating severity.
-- **Motion:** Slide up and fade in.
+**Transitions & Scroll:**
+- No dramatic page-curtain transitions. Navigation must remain fast.
+- Landing page can use horizontal scrolling, masked text reveals, and staggered panels, provided they do not cause scroll jitter.
 
-## 21. Empty & Loading States
+## 15. Accessibility & Performance
 
-- **Empty States:** Informative. Centered muted icon, short title, helper text, and a primary action button.
-- **Loading States:** Skeletons (pulsing `#1E293B`) for content blocks. Deterministic progress bars for scans. Avoid full-page spinning loaders.
+- **A11y:** Keyboard support (`focus-visible`), semantic HTML, contrast compliance. Do not communicate state using color alone (always pair with text/icons).
+- **Performance:** Interface must be smooth on mid-range hardware. Avoid excessive blur, massive DOM animations, and layout thrashing.
 
-## 22. Animation & Motion System
+## 16. Anti-Patterns (Prohibited)
 
-Animations must make the app feel alive and premium, but not distracting.
-- **Technologies:** GSAP, ScrollTrigger, Lenis (smooth scroll), Framer Motion, CSS transitions.
-- **Duration:** 
-  - Fast (Micro-interactions): `150ms`.
-  - Normal (Modals/Tabs): `300ms`.
-  - Complex (Page reveals): `600ms - 800ms`.
-- **Easing:** `cubic-bezier(0.16, 1, 0.3, 1)` or GSAP `power3.out`.
+❌ Random colors or rainbow gradients.
+❌ Excessive glassmorphism or neon.
+❌ Cyberpunk, gaming, or purple AI startup aesthetics.
+❌ Pill-shaped everything (stick to 6px-10px radius).
+❌ Fake system status or unsupported absolute security claims.
+❌ Continuous heavy animations (e.g., blurring, box-shadow pulses on scroll).
+❌ Generic "Something went wrong" errors (provide actionable technical context).
 
-## 23. Page & Scroll Transitions
+## 17. Page Creation Rule
 
-- **Page Transitions:** Subtle opacity/transform reveals. Content is usable instantly.
-- **Scroll Animations (Landing):** Use `ScrollTrigger` for pinned sections, masked typography reveals (`masked-heading`), and horizontal scrolling.
-- **Performance:** Animate `transform` and `opacity` only. Avoid animating `width`, `height`, or `box-shadow`. Respect `prefers-reduced-motion`.
+Every future page must follow:
+1. Read `/design.md`.
+2. Inspect existing components; reuse primitives.
+3. Follow design tokens, typography, spacing, and layout.
+4. Test accessibility and performance.
+5. Do not introduce a new visual pattern casually.
 
-## 24. GSAP Rules
-
-- Use `gsap.context()` in React to manage scope.
-- Always kill timelines in `useEffect` cleanup.
-- Avoid unnecessary re-renders inside `onUpdate`.
-- Use `ScrollTrigger` responsibly (do not initialize repeatedly).
-
-## 25. Accessibility (A11y)
-
-- **Keyboard Navigation:** All interactive elements must have visible focus rings (`focus-visible`).
-- **Contrast:** Ensure text meets WCAG AA standards against `bg-background`.
-- **State:** Never rely solely on color to communicate state. Include icons or text labels.
-
-## 26. Iconography
-
-- **Library:** `lucide-react`.
-- **Size Scale:** `16px` (sm), `20px` (md), `24px` (lg).
-- **Stroke Width:** `1.5px` (consistent technical feel).
-- **Usage:** Use icons to support text, not replace it, unless the action is universally understood (e.g., Close `X`).
+*Treat `/design.md` as a living design contract for SovereignX. It defines how the product should look, move, behave, and scale.*
