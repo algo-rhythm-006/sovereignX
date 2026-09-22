@@ -42,22 +42,8 @@ export default function CtaSection() {
         }
       );
 
-      // 2. Parallax and Zoom on the Video
-      gsap.fromTo(
-        videoRef.current,
-        { scale: 1, y: -20 },
-        {
-          scale: 1.15,
-          y: 20,
-          ease: "none",
-          scrollTrigger: {
-            trigger: containerRef.current,
-            start: "top bottom",
-            end: "bottom top",
-            scrub: true,
-          },
-        }
-      );
+      // 2. Parallax on Video removed for performance (scrubbing playing video + mix-blend is very laggy)
+
 
       // 3. Dynamic Overlay gradient animation
       gsap.fromTo(
@@ -76,15 +62,14 @@ export default function CtaSection() {
         }
       );
 
-      // 4. Staggered reveal for all text elements with blur
+      // 4. Staggered reveal for all text elements (blur removed for performance)
       const elements = textRef.current.children;
       gsap.fromTo(
         elements,
-        { opacity: 0, y: 40, filter: "blur(8px)" },
+        { opacity: 0, y: 40 },
         {
           opacity: 1,
           y: 0,
-          filter: "blur(0px)",
           duration: 1.2,
           stagger: 0.15,
           ease: "power3.out",
@@ -140,6 +125,10 @@ export default function CtaSection() {
             loop
             muted
             playsInline
+            onEnded={(e) => {
+              // Fallback for browsers where the native loop attribute fails
+              e.currentTarget.play();
+            }}
             className="w-full h-full object-cover opacity-80 mix-blend-screen transform-gpu"
           >
             <source src="/102852-661022019.mp4" type="video/mp4" />
@@ -176,14 +165,14 @@ export default function CtaSection() {
           </p>
 
           <div className="flex flex-wrap items-center gap-6 mt-6">
-            <div ref={buttonRef1}>
+            <div ref={buttonRef1} className="will-change-transform">
               <button className="h-[48px] px-6 rounded-[100px] bg-[#3b82f6] hover:bg-[#2563eb] text-white text-base font-medium transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_32px_rgba(59,130,246,0.6)]">
                 Start a Project 
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="ml-1"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
               </button>
             </div>
 
-            <div ref={buttonRef2} className="scale-90 origin-left">
+            <div ref={buttonRef2} className="scale-90 origin-left will-change-transform">
               <LiquidMetalButton label="Schedule a call" viewMode="text" size="md" />
             </div>
           </div>
