@@ -60,7 +60,7 @@ export function Navbar({ isMuted, toggleMute, volume, onVolumeChange }: NavbarPr
         
         {/* LOGIN BUTTON: LiquidMetal animated circle icon with text */}
         <div className="hidden sm:block relative z-[101] nav-login opacity-0">
-          <LiquidMetalButton size="sm" viewMode="text" label="Login" icon={<User size={16} />} onClick={() => alert("Login clicked!")} />
+          <LiquidMetalButton size="sm" viewMode="text" label="Login" icon={<User size={16} />} onClick={() => window.location.href = '/auth'} />
         </div>
 
         {/* SOUND CONTROLS: Button + Volume Slider Card */}
