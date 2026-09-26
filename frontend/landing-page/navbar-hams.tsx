@@ -30,8 +30,8 @@ interface iHeaderProps {
 
 const MENU_SLIDE_ANIMATION = {
     initial: { x: "100%" },
-    enter: { x: "0%", transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
-    exit: { x: "100%", transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
+    enter: { x: "0%", transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
+    exit: { x: "100%", transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
 };
 
 const defaultNavItems: iNavItem[] = [

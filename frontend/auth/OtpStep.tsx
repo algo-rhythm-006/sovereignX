@@ -3,14 +3,21 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function OtpStep({ email, onVerify, onChangeEmail, onSuccessComplete }) {
-    const [otp, setOtp] = useState(Array(6).fill(""));
+interface OtpStepProps {
+    email: string;
+    onVerify: (otp: string) => Promise<void>;
+    onChangeEmail: () => void;
+    onSuccessComplete?: () => void;
+}
+
+export default function OtpStep({ email, onVerify, onChangeEmail, onSuccessComplete }: OtpStepProps) {
+    const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [countdown, setCountdown] = useState(30);
     const [isSuccessAnim, setIsSuccessAnim] = useState(false);
     const [isErrorAnim, setIsErrorAnim] = useState(false);
-    const inputRefs = useRef([]);
+    const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
     useEffect(() => {
         if (countdown > 0 && !isSuccessAnim) {
@@ -19,7 +26,7 @@ export default function OtpStep({ email, onVerify, onChangeEmail, onSuccessCompl
         }
     }, [countdown, isSuccessAnim]);
 
-    const handleChange = (index, value) => {
+    const handleChange = (index: number, value: string) => {
         if (!/^[0-9]*$/.test(value)) return;
         
         setError("");
@@ -36,13 +43,13 @@ export default function OtpStep({ email, onVerify, onChangeEmail, onSuccessCompl
         }
     };
 
-    const handleKeyDown = (index, e) => {
+    const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Backspace" && !otp[index] && index > 0) {
             inputRefs.current[index - 1]?.focus();
         }
     };
 
-    const handlePaste = (e) => {
+    const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
         e.preventDefault();
         const pastedData = e.clipboardData.getData("text/plain").replace(/[^0-9]/g, "").slice(0, 6);
         if (!pastedData) return;
@@ -61,7 +68,7 @@ export default function OtpStep({ email, onVerify, onChangeEmail, onSuccessCompl
         }
     };
 
-    const handleVerify = async (otpString) => {
+    const handleVerify = async (otpString: string) => {
         setIsLoading(true);
         try {
             await onVerify(otpString);
@@ -72,7 +79,7 @@ export default function OtpStep({ email, onVerify, onChangeEmail, onSuccessCompl
                     onSuccessComplete();
                 }, 3000); 
             }
-        } catch (err) {
+        } catch (err: any) {
             setIsErrorAnim(true);
             setError(err.message || "Invalid code. Please try again.");
             setIsLoading(false);
@@ -99,7 +106,7 @@ export default function OtpStep({ email, onVerify, onChangeEmail, onSuccessCompl
                 if (!res.ok) throw new Error("Couldn't resend the code. Please try again.");
                 setCountdown(30);
                 setError("");
-            } catch (err) {
+            } catch (err: any) {
                 setError(err.message || "Couldn't resend the code. Please try again.");
             }
         }

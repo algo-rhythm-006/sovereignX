@@ -17,7 +17,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const router = useRouter();
 
-  const handleFormSubmit = async (e) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
         setError("Email and Password are required");
@@ -28,27 +28,34 @@ export default function Login() {
     setError("");
     
     try {
-        const res = await fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
         });
         
-        if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Failed to send OTP');
+        
+        if (!res.ok) {
+          throw new Error(data.error || 'Login failed');
+        }
+
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          if (data.user) {
+            localStorage.setItem('user', JSON.stringify(data.user));
+          }
         }
         
-        setDirection(1);
-        setStep("otp");
-    } catch (err) {
+        router.push("/dashboard");
+    } catch (err: any) {
         setError(err.message || "Something went wrong.");
     } finally {
         setIsLoading(false);
     }
   };
 
-  const handleOtpVerify = async (otp) => {
+  const handleOtpVerify = async (otp: string) => {
     const res = await fetch('/api/auth/verify-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -71,7 +78,7 @@ export default function Login() {
   };
 
   const formVariants = {
-    enter: (dir) => ({
+    enter: (dir: number) => ({
       x: dir > 0 ? 30 : -30,
       opacity: 0,
       filter: "blur(8px)",
@@ -83,7 +90,7 @@ export default function Login() {
       filter: "blur(0px)",
       scale: 1
     },
-    exit: (dir) => ({
+    exit: (dir: number) => ({
       x: dir > 0 ? -30 : 30,
       opacity: 0,
       filter: "blur(8px)",
@@ -117,7 +124,7 @@ export default function Login() {
                     Sign in to SovereignX
                   </h1>
                   
-                  <form onSubmit={handleFormSubmit} className="mt-7 flex flex-col lg:mt-6 xs:mt-5 w-full" noValidate="">
+                  <form onSubmit={handleFormSubmit} className="mt-7 flex flex-col lg:mt-6 xs:mt-5 w-full" noValidate>
                     <label className="block text-14 leading-snug tracking-snugger text-grey-60" htmlFor="email">
                         Email
                     </label>
@@ -220,7 +227,7 @@ export default function Login() {
                   <div className="mt-[22px] flex justify-center w-full">
                     <a
                         className="transition-colors duration-200 transition-all duration-200 uppercase font-bold flex items-center justify-center h-10 w-full text-12 text-white tracking-snugger rounded bg-grey-5 ring-1 ring-white/10 transition-all duration-200 hover:ring-white/15 gap-x-2 !text-13"
-                        href="https://account.huly.app/auth/google"
+                        href="/api/auth/google"
                     >
                         <img
                             alt="Google Logo"
@@ -268,9 +275,9 @@ export default function Login() {
                 className="absolute inset-0 w-full h-full"
                 width="1920"
                 height="1920"
-                autoPlay=""
-                loop=""
-                playsInline=""
+                autoPlay
+                loop
+                playsInline
                 style={{ opacity: "1" }}
               >
                 <source

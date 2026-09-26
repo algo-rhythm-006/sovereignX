@@ -93,6 +93,7 @@ const liquidButtonVariants = cva(
         default:
           "active:scale-[0.97] motion-reduce:active:scale-100 motion-reduce:hover:scale-100 [@media(hover:hover)]:hover:scale-105",
         none: "",
+        ghost: "",
       },
     },
     defaultVariants: {
