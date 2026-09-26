@@ -37,6 +37,10 @@ export const AuthController = {
       await OtpRepo.saveOtp(email, otp, expiresAt);
       const emailResult = await sendOtpEmail(email, otp);
 
+      if (!emailResult.success) {
+        return res.status(500).json({ error: emailResult.message });
+      }
+
       return res.status(200).json({
         success: true,
         message: emailResult.message,

@@ -1,27 +1,23 @@
 import { NextResponse } from 'next/server';
 
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
+
 export async function POST(request: Request) {
   try {
-    const { email, otp } = await request.json();
+    const body = await request.json();
 
-    if (!email || !otp) {
-      return NextResponse.json({ error: 'Email and OTP are required' }, { status: 400 });
-    }
+    const response = await fetch(`${BACKEND_URL}/api/auth/verify-otp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
 
-    // In a real application, you would verify the OTP against the database/Redis
-    // and check if it has expired.
-
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    // Mock validation: accept '123456' as the valid OTP for any email
-    if (otp === '123456') {
-      return NextResponse.json({ success: true, message: 'OTP verified successfully' });
-    } else {
-      return NextResponse.json({ error: 'Invalid or expired OTP' }, { status: 400 });
-    }
-  } catch (error) {
-    console.error('Error in verify-otp:', error);
-    return NextResponse.json({ error: 'Failed to verify OTP' }, { status: 500 });
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
+  } catch (error: any) {
+    console.error('Error in verify-otp proxy:', error);
+    return NextResponse.json({ error: error.message || 'Failed to communicate with auth backend' }, { status: 500 });
   }
 }

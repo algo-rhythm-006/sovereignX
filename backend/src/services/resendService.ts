@@ -7,9 +7,18 @@ const apiKey = process.env.RESEND_API_KEY;
 const resend = apiKey && !apiKey.includes('placeholder') ? new Resend(apiKey) : null;
 const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
 
+function getFormattedFromAddress(emailOrHeader: string): string {
+  if (emailOrHeader.includes('<') && emailOrHeader.includes('>')) {
+    return emailOrHeader;
+  }
+  return `SovereignX Auth <${emailOrHeader}>`;
+}
+
 export async function sendOtpEmail(email: string, otp: string): Promise<{ success: boolean; message: string }> {
+  const fromAddress = getFormattedFromAddress(fromEmail);
   console.log(`\n==================================================`);
   console.log(`📧 [RESEND OTP SERVICE] OTP Code for ${email}: [ ${otp} ]`);
+  console.log(`Sending email from: ${fromAddress}`);
   console.log(`==================================================\n`);
 
   if (!resend) {
@@ -19,11 +28,11 @@ export async function sendOtpEmail(email: string, otp: string): Promise<{ succes
 
   try {
     const data = await resend.emails.send({
-      from: `SovereignX Auth <${fromEmail}>`,
+      from: fromAddress,
       to: [email],
       subject: `Your SovereignX Verification Code: ${otp}`,
       html: `
-        <div style="font-family: Arial, sans-serif; background-color: #0b0d10; color: #ffffff; padding: 40px; borderRadius: 12px; max-width: 500px; margin: 0 auto;">
+        <div style="font-family: Arial, sans-serif; background-color: #0b0d10; color: #ffffff; padding: 40px; border-radius: 12px; max-width: 500px; margin: 0 auto;">
           <h2 style="color: #ffffff; text-align: center; font-size: 24px;">Welcome to SovereignX</h2>
           <p style="color: #a0a0a0; font-size: 15px; text-align: center;">Use the verification code below to complete your registration:</p>
           <div style="background-color: #161920; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 20px; text-align: center; margin: 30px 0;">
@@ -36,13 +45,13 @@ export async function sendOtpEmail(email: string, otp: string): Promise<{ succes
 
     if (data.error) {
       console.error('❌ [Resend Error]:', data.error);
-      return { success: true, message: 'OTP generated (Email delivery failed, check console for code)' };
+      return { success: false, message: `Email delivery failed: ${data.error.message}` };
     }
 
     console.log('✅ [Resend] Verification email dispatched successfully to', email);
     return { success: true, message: 'OTP sent successfully to email' };
   } catch (err: any) {
     console.error('⚠️ [Resend Exception]:', err?.message || err);
-    return { success: true, message: 'OTP generated (fallback console mode)' };
+    return { success: false, message: `Failed to send email: ${err?.message || 'Unknown error'}` };
   }
 }

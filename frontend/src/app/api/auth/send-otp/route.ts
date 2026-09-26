@@ -1,26 +1,23 @@
 import { NextResponse } from 'next/server';
 
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
+
 export async function POST(request: Request) {
   try {
-    const { email } = await request.json();
+    const body = await request.json();
 
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
-    }
+    const response = await fetch(`${BACKEND_URL}/api/auth/send-otp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
 
-    // In a real application, you would:
-    // 1. Generate a secure 6-digit OTP
-    // 2. Save it to a database/Redis with an expiration time
-    // 3. Send it via email (using Nodemailer, Resend, Sendgrid, etc.)
-
-    console.log(`[MOCK EMAIL SERVER] Sending OTP '123456' to ${email}`);
-
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    return NextResponse.json({ success: true, message: 'OTP sent successfully' });
-  } catch (error) {
-    console.error('Error in send-otp:', error);
-    return NextResponse.json({ error: 'Failed to send OTP' }, { status: 500 });
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
+  } catch (error: any) {
+    console.error('Error in send-otp proxy:', error);
+    return NextResponse.json({ error: error.message || 'Failed to communicate with auth backend' }, { status: 500 });
   }
 }
