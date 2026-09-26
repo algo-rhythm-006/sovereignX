@@ -18,7 +18,7 @@ export default function Signup() {
   const [error, setError] = useState("");
   const router = useRouter();
 
-  const handleFormSubmit = async (e) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !password) {
         setError("All fields are required");
@@ -42,18 +42,18 @@ export default function Signup() {
         
         setDirection(1);
         setStep("otp");
-    } catch (err) {
+    } catch (err: any) {
         setError(err.message || "Something went wrong.");
     } finally {
         setIsLoading(false);
     }
   };
 
-  const handleOtpVerify = async (otp) => {
+  const handleOtpVerify = async (otp: string) => {
     const res = await fetch('/api/auth/verify-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, otp })
+      body: JSON.stringify({ name, email, password, otp })
     });
     
     if (!res.ok) {
@@ -68,11 +68,12 @@ export default function Signup() {
   };
 
   const handleSuccessComplete = () => {
-    router.push("/");
+    // After registering login is mandatory, redirect to login page
+    router.push("/auth?registered=true");
   };
 
   const formVariants = {
-    enter: (dir) => ({
+    enter: (dir: number) => ({
       x: dir > 0 ? 30 : -30,
       opacity: 0,
       filter: "blur(8px)",
@@ -84,7 +85,7 @@ export default function Signup() {
       filter: "blur(0px)",
       scale: 1
     },
-    exit: (dir) => ({
+    exit: (dir: number) => ({
       x: dir > 0 ? -30 : 30,
       opacity: 0,
       filter: "blur(8px)",
@@ -118,7 +119,7 @@ export default function Signup() {
                     Sign up to SovereignX
                   </h1>
                   
-                  <form onSubmit={handleFormSubmit} className="mt-7 flex flex-col lg:mt-6 xs:mt-5 w-full" noValidate="">
+                  <form onSubmit={handleFormSubmit} className="mt-7 flex flex-col lg:mt-6 xs:mt-5 w-full" noValidate>
                     <label className="block text-14 leading-snug tracking-snugger text-grey-60" htmlFor="name">
                         Name
                     </label>
@@ -250,7 +251,7 @@ export default function Signup() {
                   <div className="mt-[22px] flex justify-center w-full">
                     <a
                         className="transition-colors duration-200 transition-all duration-200 uppercase font-bold flex items-center justify-center h-10 w-full text-12 text-white tracking-snugger rounded bg-grey-5 ring-1 ring-white/10 transition-all duration-200 hover:ring-white/15 gap-x-2 !text-13"
-                        href="https://account.huly.app/auth/google"
+                        href="/api/auth/google"
                     >
                         <img
                             alt="Google Logo"
@@ -298,9 +299,9 @@ export default function Signup() {
                 className="absolute inset-0 w-full h-full"
                 width="1920"
                 height="1920"
-                autoPlay=""
-                loop=""
-                playsInline=""
+                autoPlay
+                loop
+                playsInline
                 style={{ opacity: "1" }}
               >
                 <source

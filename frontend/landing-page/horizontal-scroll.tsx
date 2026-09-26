@@ -64,7 +64,7 @@ interface TagDef {
   rotate: number;
   yOffset: number;
   scale: number;
-  variant: "blue" | "light" | "glass";
+  variant: "blue" | "light" | "glass" | "white";
   size: "sm" | "md" | "lg";
   overlap: boolean;
 }
@@ -100,6 +100,15 @@ const VARIANT_MAP: Record<TagDef["variant"], React.CSSProperties> = {
   },
   // Solid off-white / warm white — dark text, strong contrast, editorial
   white: {
+    background: "#f0f0ee",
+    border: "none",
+    color: "#05080f",
+    borderRadius: 6,
+    boxShadow: "0 12px 48px rgba(240,240,238,0.08), 0 4px 16px rgba(0,0,0,0.5)",
+    fontWeight: 800,
+    letterSpacing: "-0.02em",
+  },
+  light: {
     background: "#f0f0ee",
     border: "none",
     color: "#05080f",

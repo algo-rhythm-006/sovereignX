@@ -63,11 +63,12 @@ export default function CtaSection() {
       );
 
       // 4. Staggered reveal for all text elements (blur removed for performance)
-      const elements = textRef.current.children;
-      gsap.fromTo(
-        elements,
-        { opacity: 0, y: 40 },
-        {
+      if (textRef.current) {
+        const elements = textRef.current.children;
+        gsap.fromTo(
+          elements,
+          { opacity: 0, y: 40 },
+          {
           opacity: 1,
           y: 0,
           duration: 1.2,
@@ -79,6 +80,7 @@ export default function CtaSection() {
           },
         }
       );
+      }
 
       // 5. Continuous floating animation for Button 1
       gsap.to(buttonRef1.current, {
