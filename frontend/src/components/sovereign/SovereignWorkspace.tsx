@@ -8,12 +8,14 @@ import {
   User, Folder, Settings, Bell, HelpCircle, Cpu, Network,
   Download, Paperclip, X, ArrowUp, Activity, CheckCircle,
   Clock, GitBranch, ChevronDown, Zap, Copy, ThumbsUp, ThumbsDown,
-  RotateCcw, Workflow
+  RotateCcw, Workflow, Check, Menu, PanelLeft, PanelLeftClose
 } from "lucide-react";
 import { ThinkingOrb } from "@/components/ui/thinking-orbs";
 import type { OrbState } from "@/components/ui/thinking-orbs";
 import Avatar from "@/components/ui/avatar";
 import { BorderBeam } from "@/components/ui/border-beam";
+import { LiquidGlassCard, LiquidButton } from "@/components/ui/liquid-glass-card";
+import FolderFloat from "@/components/ui/floating-folder";
 import { ExecutionStatus, ChatMessageData, UserProfileData, TimelineStep, TimelineStepStatus } from "./types";
 import { MOCK_KNOWLEDGE_BASE, MOCK_ARTIFACTS, MOCK_HISTORY } from "./mockWorkspaceData";
 
@@ -62,11 +64,21 @@ function Sidebar({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [kbOpen, setKbOpen] = useState(true);
   const [historyOpen, setHistoryOpen] = useState(true);
+  const [folderOpen, setFolderOpen] = useState(false);
 
   useEffect(() => {
     if (!sidebarRef.current) return;
     const ctx = gsap.context(() => {
-      gsap.to(sidebarRef.current, { width: collapsed ? 56 : 260, duration: 0.3, ease: "power3.inOut" });
+      gsap.fromTo(sidebarRef.current, { x: -60, opacity: 0 }, { x: 0, opacity: 1, duration: 1.5, ease: "power3.out", delay: 0.1 });
+      gsap.fromTo(".sb-item", { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: 1.0, ease: "power3.out", stagger: 0.1, delay: 0.4 });
+    }, sidebarRef);
+    return () => ctx.revert();
+  }, []);
+
+  useEffect(() => {
+    if (!sidebarRef.current) return;
+    const ctx = gsap.context(() => {
+      gsap.to(sidebarRef.current, { width: collapsed ? 72 : 260, duration: 0.3, ease: "power3.inOut" });
     });
     return () => ctx.revert();
   }, [collapsed]);
@@ -74,7 +86,7 @@ function Sidebar({
   return (
     <div
       ref={sidebarRef}
-      className="relative h-full flex flex-col shrink-0 overflow-hidden"
+      className={`absolute md:relative h-full flex flex-col shrink-0 overflow-hidden z-[100] transition-all duration-300 ${collapsed ? 'max-md:!w-0 max-md:!border-r-0 max-md:!opacity-0' : 'max-md:!w-[260px]'}`}
       style={{
         width: 260,
         background: "rgba(5,5,7,0.95)",
@@ -84,53 +96,87 @@ function Sidebar({
     >
       {/* Header */}
       <div
-        className="flex items-center justify-between px-3 shrink-0"
-        style={{ height: 56, borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+        className="sb-item flex items-center justify-between px-3 shrink-0"
+        style={{ height: 56, borderBottom: collapsed ? "none" : "1px solid rgba(255,255,255,0.06)" }}
       >
         {!collapsed && (
           <div className="flex items-center gap-2.5">
-            <div
-              className="w-6 h-6 rounded-[8px] flex items-center justify-center"
-              style={{
-                background: "rgba(0,163,255,0.15)",
-                border: "1px solid rgba(0,163,255,0.3)",
-                boxShadow: "0 0 12px rgba(0,163,255,0.2)",
-              }}
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-[#00A3FF]" />
-            </div>
+            <Avatar size="sm" color="cyan" shape="squircle" />
             <span className="text-[15px] font-semibold text-white tracking-tight" style={{ fontFamily: SF }}>
               SovereignX
             </span>
           </div>
         )}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className={`w-7 h-7 rounded-md flex items-center justify-center text-white/30 hover:text-white/70 hover:bg-white/5 transition-all duration-150 ${collapsed ? "mx-auto" : ""}`}
-        >
-          {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
-        </button>
+        
+        {!collapsed ? (
+          <button
+            onClick={() => setCollapsed(true)}
+            className="w-7 h-7 rounded-md flex items-center justify-center text-white/30 hover:text-white/70 hover:bg-white/5 transition-all duration-150"
+          >
+            <PanelLeftClose className="w-4 h-4" />
+          </button>
+        ) : (
+          <div className="w-full flex justify-center pt-2">
+             <button onClick={() => setCollapsed(false)} className="group relative outline-none">
+               <Avatar size="sm" color="cyan" shape="circle" />
+               <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 rounded-full transition-colors"></div>
+             </button>
+          </div>
+        )}
       </div>
 
       {/* Collapsed icon strip */}
       {collapsed && (
-        <div className="flex-1 flex flex-col items-center gap-1 py-3 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
-          <button onClick={onNewExecution} className="w-8 h-8 rounded-md flex items-center justify-center text-white/30 hover:text-white/70 hover:bg-white/5 transition-all duration-150" title="New Execution">
-            <Plus className="w-4 h-4" />
+        <div data-lenis-prevent="true" className="flex-1 flex flex-col items-center gap-4 py-4 overflow-y-auto w-[72px] mx-auto mt-2" style={{ scrollbarWidth: "none" }}>
+          
+          {/* New Execution */}
+          <button 
+            onClick={() => { setCollapsed(false); onNewExecution(); }} 
+            className="relative overflow-hidden w-12 h-12 rounded-[14px] bg-black/60 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] hover:shadow-[inset_0_0_0_1px_rgba(0,163,255,0.4)] flex items-center justify-center transition-all group shrink-0" 
+            title="New Execution"
+          >
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#00A3FF] to-transparent opacity-80 pointer-events-none transition-opacity duration-200 group-hover:opacity-100" />
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#00A3FF] blur-sm opacity-60 pointer-events-none transition-opacity duration-200 group-hover:opacity-80" />
+            <Plus className="relative z-10 w-[22px] h-[22px] text-[#00A3FF] group-hover:text-white transition-colors" />
           </button>
-          <button className="w-8 h-8 rounded-md flex items-center justify-center text-white/30 hover:text-white/70 hover:bg-white/5 transition-all duration-150" title="Search">
-            <Search className="w-3.5 h-3.5" />
-          </button>
-          <div className="w-5 h-px bg-white/6 my-1" />
-          {[ScanSearch, Database, FileCheck, Terminal].map((Icon, i) => (
-            <button key={i} className="w-8 h-8 rounded-md flex items-center justify-center text-white/30 hover:text-white/70 hover:bg-white/5 transition-all duration-150">
-              <Icon className="w-3.5 h-3.5" />
+          
+          <div className="w-6 h-[1px] bg-white/10 my-1 shrink-0" />
+
+          {/* Navigation Icons */}
+          {[
+            { icon: Search, title: "Search" },
+            { icon: ScanSearch, title: "Audit System Architecture" },
+            { icon: FileCheck, title: "Extract Compliance" },
+            { icon: Terminal, title: "Execute Sandbox" },
+            { icon: Database, title: "Knowledge Base" },
+          ].map((item, i) => (
+            <button 
+              key={i}
+              onClick={() => setCollapsed(false)} 
+              className="relative overflow-hidden w-12 h-12 rounded-xl flex items-center justify-center text-white/50 hover:text-white bg-black/20 hover:bg-black/40 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_-4px_20px_-4px_rgba(255,255,255,0.05)] hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0_-4px_20px_-4px_rgba(255,255,255,0.15)] transition-all duration-200 shrink-0 group" 
+              title={item.title}
+            >
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 group-hover:opacity-100 pointer-events-none transition-opacity duration-200" />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 group-hover:opacity-60 pointer-events-none transition-opacity duration-200" />
+              <item.icon className="relative z-10 w-[22px] h-[22px] transition-colors duration-200" />
             </button>
           ))}
-          <div className="mt-auto mb-2">
-            <div className="w-7 h-7 rounded-full bg-white/8 border border-white/10 flex items-center justify-center">
-              <User className="w-3.5 h-3.5 text-white/40" />
-            </div>
+
+          {/* Bottom Profile / Settings */}
+          <div className="mt-auto mb-6 flex flex-col gap-5 items-center shrink-0 w-full">
+            <button 
+              onClick={() => setCollapsed(false)} 
+              className="relative overflow-hidden w-12 h-12 rounded-xl flex items-center justify-center text-white/50 hover:text-white bg-black/20 hover:bg-black/40 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_-4px_20px_-4px_rgba(255,255,255,0.05)] hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0_-4px_20px_-4px_rgba(255,255,255,0.15)] transition-all duration-200 group" 
+              title="Settings"
+            >
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 group-hover:opacity-100 pointer-events-none transition-opacity duration-200" />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 group-hover:opacity-60 pointer-events-none transition-opacity duration-200" />
+              <Settings className="relative z-10 w-[22px] h-[22px] transition-colors duration-200" />
+            </button>
+            <button className="group relative outline-none" onClick={() => setCollapsed(false)}>
+              <Avatar size="sm" color="white" shape="circle" />
+              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 rounded-full transition-colors"></div>
+            </button>
           </div>
         </div>
       )}
@@ -138,11 +184,12 @@ function Sidebar({
       {/* Expanded content — THIS IS SCROLLABLE */}
       {!collapsed && (
         <div
-          className="flex-1 overflow-y-auto pb-20"
+          data-lenis-prevent="true"
+          className="flex-1 overflow-y-auto pb-36"
           style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.1) transparent" }}
         >
           {/* New + search */}
-          <div className="px-3 py-2.5 space-y-1">
+          <div className="sb-item px-3 py-2.5 space-y-1">
             <button
               onClick={onNewExecution}
               className="relative overflow-hidden w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium text-white/90 hover:text-white transition-all duration-200 group"
@@ -159,17 +206,19 @@ function Sidebar({
               <span className="relative z-10">New Execution</span>
             </button>
             <button
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium text-white/50 hover:text-white/80 hover:bg-white/5 transition-all duration-200"
+              className="relative overflow-hidden w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium text-white/50 hover:text-white hover:bg-black/40 hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_-4px_20px_-4px_rgba(255,255,255,0.1)] transition-all duration-200 group"
               style={{ fontFamily: SF }}
             >
-              <Search className="w-[18px] h-[18px]" />
-              Search
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-0 group-hover:opacity-70 pointer-events-none transition-opacity duration-200" />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-0 group-hover:opacity-30 pointer-events-none transition-opacity duration-200" />
+              <Search className="relative z-10 w-[18px] h-[18px] text-white/30 group-hover:text-white/80 transition-colors duration-200" />
+              <span className="relative z-10">Search</span>
             </button>
           </div>
 
           <div className="px-3 space-y-5 mt-2">
             {/* Workflows */}
-            <div>
+            <div className="sb-item">
               <div className="flex items-center gap-1.5 px-2 mb-2 mt-2">
                 <span className="text-xs font-semibold text-white/30 uppercase tracking-wider" style={{ fontFamily: SF }}>
                   Workflows
@@ -201,8 +250,44 @@ function Sidebar({
               </div>
             </div>
 
+
+            {/* Quick Actions (Floating Folder) */}
+            <div className="sb-item">
+              <div className="flex items-center gap-1.5 px-2 mb-2 mt-2">
+                <span className="text-xs font-semibold text-white/30 uppercase tracking-wider" style={{ fontFamily: SF }}>
+                  Quick Actions
+                </span>
+              </div>
+              <div 
+                className={`relative rounded-2xl p-4 pb-5 flex justify-center transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${folderOpen ? "pt-40" : "pt-6"}`}
+                style={{
+                  background: "rgba(0,0,0,0.6)",
+                  boxShadow: "0 8px 32px -8px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 -4px 20px -4px rgba(255, 255, 255, 0.12)",
+                  backdropFilter: "blur(24px)",
+                }}
+              >
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 pointer-events-none rounded-b-2xl" />
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 pointer-events-none rounded-b-2xl" />
+                
+                <FolderFloat 
+                  items={QUICK_ACTIONS.map(a => a.title)}
+                  label="Workflows"
+                  sublabel="4 Available Actions"
+                  folderColor="rgba(255,255,255,0.04)"
+                  frontColor="rgba(255,255,255,0.08)"
+                  paperColor="rgba(10,10,12,0.9)"
+                  itemColor="rgba(255,255,255,0.1)"
+                  itemTextColor="#e4e4e7"
+                  labelColor="#ffffff"
+                  width={210}
+                  height={150}
+                  onOpenChange={setFolderOpen}
+                />
+              </div>
+            </div>
+
             {/* Knowledge Base */}
-            <div>
+            <div className="sb-item">
               <button
                 onClick={() => setKbOpen(!kbOpen)}
                 className="w-full flex items-center justify-between px-2 mb-2 mt-4 group"
@@ -230,14 +315,17 @@ function Sidebar({
                     {MOCK_KNOWLEDGE_BASE.map((file, i) => (
                       <button
                         key={file.id}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 text-left ${
+                        className={`relative overflow-hidden w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 text-left group ${
                           i === 0
-                            ? "text-white/90 bg-white/10 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)]"
-                            : "text-white/50 hover:text-white/90 hover:bg-white/5"
+                            ? "text-white bg-black/40 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0_-4px_20px_-4px_rgba(255,255,255,0.12)]"
+                            : "text-white/50 hover:text-white hover:bg-black/40 hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_-4px_20px_-4px_rgba(255,255,255,0.08)]"
                         }`}
                       >
-                        <FileText className={`w-[18px] h-[18px] shrink-0 ${i === 0 ? "text-white/70" : "text-white/30"}`} />
-                        <span className="truncate text-[13px] font-medium" style={{ fontFamily: SF }}>
+                        <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent pointer-events-none transition-opacity duration-200 ${i === 0 ? 'opacity-70' : 'opacity-0 group-hover:opacity-70'}`} />
+                        <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm pointer-events-none transition-opacity duration-200 ${i === 0 ? 'opacity-30' : 'opacity-0 group-hover:opacity-30'}`} />
+
+                        <FileText className={`relative z-10 w-[18px] h-[18px] shrink-0 transition-colors duration-200 ${i === 0 ? "text-white/80" : "text-white/30 group-hover:text-white/80"}`} />
+                        <span className="relative z-10 truncate text-[13px] font-medium" style={{ fontFamily: SF }}>
                           {file.filename}
                         </span>
                       </button>
@@ -248,7 +336,7 @@ function Sidebar({
             </div>
 
             {/* History */}
-            <div>
+            <div className="sb-item">
               <button
                 onClick={() => setHistoryOpen(!historyOpen)}
                 className="w-full flex items-center justify-between px-2 mb-2 mt-4 group"
@@ -259,66 +347,91 @@ function Sidebar({
                 <ChevronDown className={`w-3.5 h-3.5 text-white/30 transition-transform duration-200 ${historyOpen ? "rotate-0" : "-rotate-90"}`} />
               </button>
               {historyOpen && (
-                <div className="space-y-3">
+                <div className="space-y-3 pb-1">
                   {(["Today", "Yesterday", "Older"] as const).map((group) => {
                     const items = MOCK_HISTORY.filter(h => h.date === group);
                     if (!items.length) return null;
                     return (
-                      <div key={group}>
-                        <div className="px-3 mb-1.5 mt-2 text-[11px] font-semibold text-white/20 uppercase tracking-wider" style={{ fontFamily: SF }}>
+                      <div key={group} className="space-y-1.5">
+                        <div className="px-2 text-[10px] font-semibold text-white/30 uppercase tracking-wider" style={{ fontFamily: SF }}>
                           {group}
                         </div>
-                        {items.map(h => (
-                          <button
-                            key={h.id}
-                            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[14px] font-medium text-white/40 hover:text-white/80 hover:bg-white/5 transition-all duration-200 text-left"
-                            style={{ fontFamily: SF }}
-                          >
-                            <Clock className="w-4 h-4 shrink-0 text-white/20" />
-                            <span className="truncate">{h.title}</span>
-                          </button>
-                        ))}
+                        <div 
+                          className="relative overflow-hidden rounded-2xl p-1.5"
+                          style={{
+                            background: "rgba(0,0,0,0.6)",
+                            boxShadow: "0 8px 32px -8px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 -4px 20px -4px rgba(255, 255, 255, 0.12)",
+                            backdropFilter: "blur(24px)",
+                          }}
+                        >
+                          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 pointer-events-none" />
+                          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 pointer-events-none" />
+                          
+                          <div className="space-y-0.5 relative z-10 pb-0.5">
+                            {items.map(h => (
+                              <button
+                                key={h.id}
+                                className="relative overflow-hidden w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-200 text-left group text-white/50 hover:text-white hover:bg-black/40 hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_-4px_20px_-4px_rgba(255,255,255,0.08)]"
+                                style={{ fontFamily: SF }}
+                              >
+                                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-0 group-hover:opacity-70 pointer-events-none transition-opacity duration-200" />
+                                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-0 group-hover:opacity-30 pointer-events-none transition-opacity duration-200" />
+                                
+                                <Clock className="relative z-10 w-[16px] h-[16px] shrink-0 text-white/30 group-hover:text-white/80 transition-colors duration-200" />
+                                <span className="relative z-10 truncate">{h.title}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     );
                   })}
                 </div>
               )}
             </div>
+
           </div>
         </div>
       )}
 
       {/* User footer — fixed at bottom */}
       {!collapsed && (
-        <div
-          className="absolute bottom-0 left-0 right-0 px-3 py-3 shrink-0"
-          style={{
-            borderTop: "1px solid rgba(255,255,255,0.06)",
-            background: "rgba(5,5,7,0.98)",
-            backdropFilter: "blur(20px)",
-          }}
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-full bg-white/6 border border-white/10 flex items-center justify-center shrink-0">
-              <User className="w-3.5 h-3.5 text-white/40" />
+        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-[#050507] via-[#050507]/90 to-transparent z-0 pointer-events-none h-32"></div>
+      )}
+      {!collapsed && (
+        <div className="sb-item absolute bottom-3 left-3 right-3 z-20">
+          <div 
+            className="relative flex items-center justify-between gap-3 px-3 py-3 rounded-2xl bg-black/60 backdrop-blur-xl w-full group cursor-pointer transition-colors hover:bg-black/80"
+            style={{ 
+              boxShadow: '0 4px 24px -6px rgba(0, 163, 255, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.05), inset 0 -4px 12px -2px rgba(0, 163, 255, 0.3)'
+            }}
+          >
+            {/* The Badge UI Glowing Bottom Borders */}
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#00A3FF] to-transparent opacity-80" />
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#00A3FF] blur-sm opacity-60" />
+
+            {/* Avatar */}
+            <div className="relative shrink-0">
+              <Avatar size="sm" color="white" shape="circle" />
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[12px] font-medium text-white/70 truncate" style={{ fontFamily: SF }}>
-                {user?.name ?? "User"}
+            
+            <div className="flex-1 flex flex-col justify-center min-w-0">
+              <div className="text-[13px] font-semibold text-white/95 truncate tracking-tight" style={{ fontFamily: SF }}>
+                {user?.name ?? "Prithvi Raj Thakur"}
               </div>
-              <div className="flex items-center gap-1 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                <span className="text-[10px] text-white/30" style={{ fontFamily: "Geist Mono, 'SF Mono', monospace" }}>
-                  Verified · Air-Gapped
-                </span>
+              <div className="text-[10px] text-white/50 mt-1" style={{ fontFamily: "Geist Mono, 'SF Mono', monospace", lineHeight: "1.3" }}>
+                <span className="text-[#00A3FF] font-semibold">PRO</span> <span className="opacity-50">·</span> System Admin
+                <br/>
+                <span className="text-white/30 text-[9px]">Secured Air-Gapped</span>
               </div>
             </div>
-            <button
-              onClick={onLogout}
-              className="w-6 h-6 rounded-md flex items-center justify-center text-white/20 hover:text-white/60 hover:bg-white/5 transition-all duration-150"
-              title="Sign out"
+            
+            <button 
+              onClick={onLogout} 
+              className="w-7 h-7 flex items-center justify-center rounded-full text-white/30 hover:text-[#00A3FF] hover:bg-[#00A3FF]/10 shrink-0 transition-all duration-300 relative z-10 group/btn"
+              title="Settings"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <Settings className="w-3.5 h-3.5 group-hover/btn:rotate-90 transition-transform duration-300" />
             </button>
           </div>
         </div>
@@ -329,9 +442,11 @@ function Sidebar({
 
 // ─── TOPBAR ────────────────────────────────────────────────────────────────────
 function Topbar({ onToggleSidebar, sidebarCollapsed }: { onToggleSidebar: () => void; sidebarCollapsed: boolean }) {
+  const [statsOpen, setStatsOpen] = useState(false);
+
   return (
     <header
-      className="flex items-center justify-between px-5 shrink-0"
+      className="flex items-center justify-between px-3 md:px-5 shrink-0 relative z-50"
       style={{
         height: 56,
         background: "rgba(5,5,7,0.90)",
@@ -339,42 +454,19 @@ function Topbar({ onToggleSidebar, sidebarCollapsed }: { onToggleSidebar: () => 
         backdropFilter: "blur(20px)",
       }}
     >
-      <div className="flex items-center gap-3">
-        {sidebarCollapsed && (
-          <button onClick={onToggleSidebar} className="text-white/30 hover:text-white/70 transition-colors mr-1">
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        )}
-        <span
-          className="text-[12px] text-white/30"
-          style={{ fontFamily: "Geist Mono, 'SF Mono', monospace" }}
+      <div className="flex items-center gap-2 md:gap-3">
+        <button 
+          onClick={onToggleSidebar} 
+          className={`text-white/50 hover:text-white transition-colors w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 ${!sidebarCollapsed ? 'md:hidden' : ''}`}
+          title="Toggle Sidebar"
         >
-          SovereignX / Enterprise AI Workspace
-        </span>
-        <div className="h-3 w-px bg-white/8" />
-        <div className="flex items-center gap-1.5">
-          {[
-            { label: "AIR-GAPPED", color: "#10B981" },
-            { label: "LOCAL INFERENCE", color: "#00A3FF" },
-            { label: "RAG ACTIVE", color: "#8B5CF6" },
-          ].map(({ label, color }) => (
-            <span
-              key={label}
-              className="text-[9px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full"
-              style={{
-                color,
-                backgroundColor: `${color}14`,
-                border: `1px solid ${color}30`,
-                fontFamily: "Geist Mono, 'SF Mono', monospace",
-              }}
-            >
-              {label}
-            </span>
-          ))}
-        </div>
+          <Menu className="w-4 h-4 transition-colors duration-200 md:hidden" />
+          <PanelLeft className="w-4 h-4 transition-colors duration-200 hidden md:block" />
+        </button>
       </div>
 
-      <div className="flex items-center gap-1.5">
+      {/* Desktop Stats */}
+      <div className="hidden md:flex items-center gap-1.5">
         {[
           { icon: Network, label: "WAN: 0 KB/s", warn: true },
           { icon: Cpu, label: "SLM: 3B" },
@@ -399,16 +491,43 @@ function Topbar({ onToggleSidebar, sidebarCollapsed }: { onToggleSidebar: () => 
             <span className="relative z-10">{label}</span>
           </div>
         ))}
-        <div className="flex items-center gap-0.5 ml-1">
-          {[Bell, Settings, HelpCircle].map((Icon, i) => (
-            <button key={i} className="w-8 h-8 rounded-full flex items-center justify-center text-white/25 hover:text-white/60 hover:bg-white/5 transition-all duration-150">
-              <Icon className="w-3.5 h-3.5" />
-            </button>
-          ))}
-          <div className="w-7 h-7 rounded-full bg-white/6 border border-white/10 flex items-center justify-center ml-1">
-            <User className="w-3.5 h-3.5 text-white/40" />
+      </div>
+
+      {/* Mobile Stats Dropdown */}
+      <div className="md:hidden relative">
+        <button 
+          onClick={() => setStatsOpen(!statsOpen)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] bg-black/60 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] hover:bg-white/5 transition-colors"
+        >
+          <Activity className="w-3 h-3 text-[#00A3FF]" />
+          <span className="font-semibold tracking-wide text-white/80" style={{ fontFamily: "Geist Mono, 'SF Mono', monospace" }}>System</span>
+          <ChevronDown className={`w-3 h-3 text-white/50 transition-transform duration-200 ${statsOpen ? 'rotate-180' : ''}`} />
+        </button>
+        
+        {statsOpen && (
+          <div className="absolute top-full right-0 mt-3 p-2 rounded-xl bg-black/90 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl border border-white/5 min-w-[150px] flex flex-col gap-1.5 z-50">
+            {[
+              { icon: Network, label: "WAN: 0 KB/s", warn: true },
+              { icon: Cpu, label: "SLM: 3B" },
+              { icon: Activity, label: "VRAM: 4 GB" },
+            ].map(({ icon: Icon, label, warn }) => (
+              <div
+                key={label}
+                className="relative overflow-hidden flex items-center gap-2 px-2 py-2 rounded-lg text-[10px]"
+                style={{
+                  color: warn ? "#F59E0B" : "rgba(255,255,255,0.8)",
+                  background: warn ? "rgba(245, 158, 11, 0.1)" : "rgba(255,255,255,0.03)",
+                  fontFamily: "Geist Mono, 'SF Mono', monospace"
+                }}
+              >
+                <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent ${warn ? 'via-[#F59E0B]' : 'via-[#00A3FF]'} to-transparent opacity-80 pointer-events-none`} />
+                <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[2px] ${warn ? 'bg-[#F59E0B]' : 'bg-[#00A3FF]'} blur-[2px] opacity-60 pointer-events-none`} />
+                <Icon className={`relative z-10 w-3 h-3 ${warn ? 'text-[#F59E0B]' : 'text-[#00A3FF]'}`} />
+                <span className="relative z-10 font-semibold tracking-wide">{label}</span>
+              </div>
+            ))}
           </div>
-        </div>
+        )}
       </div>
     </header>
   );
@@ -437,15 +556,10 @@ function PipelinePanel({ status }: { status: ExecutionStatus }) {
   if (status === "idle") return null;
 
   return (
-    <div className="max-w-[720px] mx-auto px-4 mb-6">
-      <div
-        className="flex gap-4 p-4 rounded-2xl"
-        style={{
-          background: "rgba(255,255,255,0.03)",
-          border: "1px solid rgba(255,255,255,0.07)",
-          backdropFilter: "blur(12px)",
-        }}
-      >
+    <div className="max-w-[840px] mx-auto px-4 mb-6">
+      <div className="flex gap-4 p-4 rounded-[16px] overflow-hidden relative bg-black/60 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] backdrop-blur-xl">
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 pointer-events-none" />
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 pointer-events-none" />
         {/* Orb */}
         <div className="flex flex-col items-center gap-2 shrink-0 w-20">
           <div
@@ -472,20 +586,20 @@ function PipelinePanel({ status }: { status: ExecutionStatus }) {
               <div key={step.id} className={`flex flex-col gap-1.5 transition-opacity duration-500 ${st === "pending" ? "opacity-20" : "opacity-100"}`}>
                 <div className="flex items-center gap-1.5">
                   <div
-                    className={`w-5 h-5 rounded-md flex items-center justify-center border transition-all duration-300 ${
-                      st === "completed" ? "text-[#00A3FF]" : st === "running" ? "text-[#00A3FF]/70 animate-pulse" : "text-white/20"
+                    className={`w-5 h-5 rounded-md flex items-center justify-center border transition-all duration-300 relative z-10 ${
+                      st === "completed" ? "text-[#A1A1AA]" : st === "running" ? "text-white animate-pulse" : "text-white/20"
                     }`}
                     style={{
-                      background: st === "completed" ? "rgba(0,163,255,0.12)" : st === "running" ? "rgba(0,163,255,0.06)" : "rgba(255,255,255,0.03)",
-                      borderColor: st === "completed" ? "rgba(0,163,255,0.3)" : st === "running" ? "rgba(0,163,255,0.15)" : "rgba(255,255,255,0.08)",
+                      background: st === "completed" ? "rgba(161,161,170,0.12)" : st === "running" ? "rgba(161,161,170,0.2)" : "rgba(255,255,255,0.03)",
+                      borderColor: st === "completed" ? "rgba(161,161,170,0.3)" : st === "running" ? "rgba(161,161,170,0.4)" : "rgba(255,255,255,0.08)",
                     }}
                   >
                     <Icon className="w-3 h-3" />
                   </div>
                   {i < 4 && (
                     <div
-                      className="flex-1 h-px transition-colors duration-700"
-                      style={{ background: st === "completed" ? "rgba(0,163,255,0.3)" : "rgba(255,255,255,0.06)" }}
+                      className="flex-1 h-px transition-colors duration-700 relative z-10"
+                      style={{ background: st === "completed" ? "rgba(161,161,170,0.3)" : "rgba(255,255,255,0.06)" }}
                     />
                   )}
                 </div>
@@ -512,16 +626,36 @@ function ChatMessage({ message, isLast }: { message: ChatMessageData; isLast?: b
   const isUser = message.role === "user";
   const ref = useRef<HTMLDivElement>(null);
   const [showActions, setShowActions] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [feedback, setFeedback] = useState<"up" | "down" | null>(null);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
+  const handleRegenerate = () => {
+    if (isRegenerating) return;
+    setIsRegenerating(true);
+    // Simulate a regeneration delay before turning off the spinner
+    setTimeout(() => setIsRegenerating(false), 1500);
+  };
 
   useEffect(() => {
     if (!ref.current) return;
-    gsap.fromTo(ref.current, { opacity: 0, y: isUser ? 8 : 4 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" });
+    gsap.fromTo(ref.current, { opacity: 0, y: 20, scale: 0.98 }, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: "power3.out" });
   }, [isUser]);
 
   if (isUser) {
     return (
-      <div ref={ref} className="flex justify-end max-w-[720px] mx-auto px-4 mb-6">
-        <div className="max-w-[75%]">
+      <div ref={ref} className="flex justify-end gap-3 max-w-[840px] mx-auto px-4 mb-6">
+        <div className="max-w-[75%] flex flex-col items-end">
           {message.attachments && message.attachments.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2 justify-end">
               {message.attachments.map(att => (
@@ -533,14 +667,18 @@ function ChatMessage({ message, isLast }: { message: ChatMessageData; isLast?: b
             </div>
           )}
           <div
-            className="rounded-[16px] rounded-br-sm px-4 py-3"
-            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
+            className="rounded-[16px] rounded-br-sm px-4 py-3 relative overflow-hidden bg-black/60 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] backdrop-blur-xl"
           >
-            <p className="text-[14px] text-white/80 leading-relaxed" style={{ fontFamily: SF }}>{message.content}</p>
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 pointer-events-none" />
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 pointer-events-none" />
+            <p className="text-[14px] text-white/80 leading-relaxed relative z-10" style={{ fontFamily: SF }}>{message.content}</p>
           </div>
           <div className="flex justify-end mt-1.5">
             <span className="text-[10px] text-white/20" style={{ fontFamily: "Geist Mono, 'SF Mono', monospace" }}>{message.timestamp}</span>
           </div>
+        </div>
+        <div className="shrink-0 mt-1">
+          <Avatar size="sm" color="white" shape="circle" />
         </div>
       </div>
     );
@@ -549,7 +687,7 @@ function ChatMessage({ message, isLast }: { message: ChatMessageData; isLast?: b
   return (
     <div
       ref={ref}
-      className="max-w-[720px] mx-auto px-4 mb-6"
+      className="max-w-[840px] mx-auto px-4 mb-6"
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
@@ -557,36 +695,59 @@ function ChatMessage({ message, isLast }: { message: ChatMessageData; isLast?: b
       <div className="flex items-center gap-2.5 mb-3">
         <Avatar size="sm" color="cyan" shape="circle" />
         <span className="text-[13px] font-semibold text-white/90" style={{ fontFamily: SF }}>SovereignX</span>
-        <div className="flex items-center gap-1">
-          {["LOCAL", "RAG"].map(tag => (
-            <span
-              key={tag}
-              className="text-[9px] text-white/30 px-1.5 py-0.5 rounded"
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", fontFamily: "Geist Mono, 'SF Mono', monospace" }}
-            >
-              {tag}
-            </span>
+        <div className="flex items-center gap-1.5">
+          {["LOCAL", "RAG", "GOVERNED"].map(tag => (
+            <div key={tag} className="relative overflow-hidden px-2 py-0.5 rounded-sm flex items-center justify-center bg-black/60 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] text-[#A1A1AA]">
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 pointer-events-none" />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 pointer-events-none" />
+              <span className="relative z-10 text-[9px] font-mono tracking-widest uppercase">{tag}</span>
+            </div>
           ))}
-          <span
-            className="text-[9px] px-1.5 py-0.5 rounded"
-            style={{ color: "#10B981", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", fontFamily: "Geist Mono, 'SF Mono', monospace" }}
-          >
-            GOVERNED
-          </span>
         </div>
       </div>
 
       {/* Content */}
-      <div className="pl-[36px]">
-        <p className="text-[14px] text-white/70 leading-[1.8] tracking-[-0.003em]" style={{ fontFamily: SF }}>
-          {message.content}
-        </p>
-        <div className={`flex items-center gap-0.5 mt-4 transition-opacity duration-200 ${showActions || isLast ? "opacity-100" : "opacity-0"}`}>
-          {[{ icon: Copy, label: "Copy" }, { icon: ThumbsUp, label: "Good" }, { icon: ThumbsDown, label: "Bad" }, { icon: RotateCcw, label: "Regenerate" }].map(({ icon: Icon, label }) => (
-            <button key={label} title={label} className="w-7 h-7 rounded-md flex items-center justify-center text-white/20 hover:text-white/50 hover:bg-white/5 transition-all duration-150">
-              <Icon className="w-3.5 h-3.5" />
-            </button>
-          ))}
+      <div className="pl-[36px] max-w-[88%]">
+        <div className="relative overflow-hidden p-4 rounded-[16px] rounded-bl-sm bg-black/60 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] backdrop-blur-xl">
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 pointer-events-none" />
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 pointer-events-none" />
+          <p className="text-[14px] text-white/80 leading-[1.8] tracking-[-0.003em] relative z-10" style={{ fontFamily: SF }}>
+            {message.content}
+          </p>
+        </div>
+        <div className={`flex items-center gap-0.5 mt-4 transition-opacity duration-200 ${showActions || isLast || feedback !== null || copied || isRegenerating ? "opacity-100" : "opacity-0"}`}>
+          <button 
+            title="Copy" 
+            onClick={handleCopy}
+            className={`w-7 h-7 rounded-md flex items-center justify-center transition-all duration-150 ${copied ? "text-emerald-400 bg-emerald-400/10" : "text-white/20 hover:text-white/50 hover:bg-white/5"}`}
+          >
+            {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+          </button>
+          
+          <button 
+            title="Good" 
+            onClick={() => setFeedback(prev => prev === "up" ? null : "up")}
+            className={`w-7 h-7 rounded-md flex items-center justify-center transition-all duration-150 ${feedback === "up" ? "text-emerald-400 bg-emerald-400/10" : "text-white/20 hover:text-white/50 hover:bg-white/5"}`}
+          >
+            <ThumbsUp className={`w-3.5 h-3.5 ${feedback === "up" ? "fill-emerald-400/20" : ""}`} />
+          </button>
+          
+          <button 
+            title="Bad" 
+            onClick={() => setFeedback(prev => prev === "down" ? null : "down")}
+            className={`w-7 h-7 rounded-md flex items-center justify-center transition-all duration-150 ${feedback === "down" ? "text-rose-400 bg-rose-400/10" : "text-white/20 hover:text-white/50 hover:bg-white/5"}`}
+          >
+            <ThumbsDown className={`w-3.5 h-3.5 ${feedback === "down" ? "fill-rose-400/20" : ""}`} />
+          </button>
+          
+          <button 
+            title="Regenerate" 
+            onClick={handleRegenerate}
+            className="w-7 h-7 rounded-md flex items-center justify-center text-white/20 hover:text-white/50 hover:bg-white/5 transition-all duration-150 group"
+          >
+            <RotateCcw className={`w-3.5 h-3.5 ${isRegenerating ? "animate-spin text-cyan-400" : "group-hover:-rotate-90 transition-transform duration-300"}`} />
+          </button>
+
           <span className="text-[10px] text-white/20 ml-1.5" style={{ fontFamily: "Geist Mono, 'SF Mono', monospace" }}>{message.timestamp}</span>
         </div>
       </div>
@@ -604,32 +765,39 @@ function Artifacts({ show }: { show: boolean }) {
   if (!show) return null;
 
   return (
-    <div ref={ref} className="max-w-[720px] mx-auto px-4 mb-6 pl-[52px]">
-      <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)" }}>
-        <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-          <Folder className="w-3.5 h-3.5 text-white/30" />
-          <span className="text-[11px] font-medium text-white/30 uppercase tracking-widest" style={{ fontFamily: "Geist Mono, 'SF Mono', monospace" }}>
+    <div ref={ref} className="max-w-[840px] mx-auto px-4 mb-6 pl-[52px]">
+      <div className="rounded-[16px] overflow-hidden relative bg-black/60 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] backdrop-blur-xl max-w-[88%]">
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 pointer-events-none" />
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 pointer-events-none" />
+        
+        <div className="flex items-center gap-2 px-4 py-3 bg-[#111]/40 border-b border-white/5">
+          <Folder className="w-3.5 h-3.5 text-[#A1A1AA]" />
+          <span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-widest" style={{ fontFamily: "Geist Mono, 'SF Mono', monospace" }}>
             Governance Artifacts
           </span>
         </div>
-        <div className="p-3 grid grid-cols-3 gap-2">
+        <div className="p-3 grid grid-cols-3 gap-2 relative z-10">
           {MOCK_ARTIFACTS.map(artifact => (
             <div
               key={artifact.id}
               className="group flex flex-col gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200"
               style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
               onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,163,255,0.2)";
-                (e.currentTarget as HTMLElement).style.background = "rgba(0,163,255,0.04)";
+                (e.currentTarget as HTMLElement).style.borderColor = "rgba(161,161,170,0.4)";
+                (e.currentTarget as HTMLElement).style.background = "rgba(161,161,170,0.05)";
+                (e.currentTarget as HTMLElement).style.boxShadow = "0 0 15px rgba(161,161,170,0.15)";
               }}
               onMouseLeave={e => {
                 (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.06)";
                 (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.02)";
+                (e.currentTarget as HTMLElement).style.boxShadow = "none";
               }}
             >
               <div className="flex items-start gap-2">
-                <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0 text-white/30" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", fontFamily: "Geist Mono, 'SF Mono', monospace", fontSize: "9px" }}>
-                  {artifact.type}
+                <div className="relative overflow-hidden h-6 px-2 rounded flex items-center justify-center shrink-0 bg-black/60 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] text-[#A1A1AA]">
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 pointer-events-none" />
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 pointer-events-none" />
+                  <span className="relative z-10 text-[9px] font-mono tracking-widest uppercase">{artifact.type}</span>
                 </div>
                 <span className="text-[11px] text-white/50 truncate pt-0.5 group-hover:text-white/80 transition-colors" title={artifact.filename} style={{ fontFamily: SF }}>
                   {artifact.filename}
@@ -659,87 +827,53 @@ function EmptyState({ onAction }: { onAction: (q: string) => void }) {
   useEffect(() => {
     if (!ref.current) return;
     const ctx = gsap.context(() => {
-      gsap.fromTo(ref.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" });
-    });
+      const tl = gsap.timeline();
+      gsap.fromTo(ref.current, { opacity: 0 }, { opacity: 1, duration: 1.0 });
+      
+      tl.fromTo(".es-logo", { y: -30, opacity: 0, scale: 0.9 }, { y: 0, opacity: 1, scale: 1, duration: 1.5, ease: "power3.out" }, 0.3)
+        .fromTo(".es-title", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 1.2, ease: "power3.out" }, "-=0.7")
+        .fromTo(".es-desc", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 1.2, ease: "power3.out" }, "-=0.9")
+        .fromTo(".es-status-item", { x: 30, opacity: 0 }, { x: 0, opacity: 1, duration: 1.2, ease: "power3.out", stagger: 0.15 }, "-=0.7");
+    }, ref);
     return () => ctx.revert();
   }, []);
 
   return (
-    <div ref={ref} className="flex-1 flex flex-col items-center justify-center px-6 gap-10 py-12">
+    <div ref={ref} className="flex-1 min-h-full flex flex-col items-center justify-center px-6 gap-10 py-12">
       {/* Hero */}
       <div className="text-center max-w-lg">
         {/* Ambient glow orb */}
-        <div className="relative w-16 h-16 mx-auto mb-8 flex justify-center items-center">
+        <div className="es-logo relative w-16 h-16 mx-auto mb-8 flex justify-center items-center">
           <div className="absolute inset-0 rounded-full blur-2xl" style={{ background: "rgba(0,163,255,0.2)" }} />
           <div className="relative z-10">
             <Avatar size="lg" color="cyan" shape="squircle" />
           </div>
         </div>
         <h1
-          className="text-[30px] font-semibold tracking-[-0.03em] text-white leading-tight mb-4"
+          className="es-title text-[30px] font-semibold tracking-[-0.03em] leading-tight mb-4 text-transparent bg-clip-text bg-gradient-to-b from-white/60 to-white/20"
           style={{ fontFamily: SF }}
         >
           What are we securing today?
         </h1>
-        <p className="text-[15px] text-white/40 leading-relaxed" style={{ fontFamily: SF }}>
+        <p className="es-desc text-[15px] text-white/40 leading-relaxed" style={{ fontFamily: SF }}>
           Query local models, search private knowledge, execute governed workflows —
           all inference remains within your air-gapped environment.
         </p>
       </div>
 
-      {/* Action cards */}
-      <div className="grid grid-cols-2 gap-3 w-full max-w-[640px]">
-        {QUICK_ACTIONS.map(({ icon: Icon, title, desc, tag }) => (
-          <button
-            key={title}
-            onClick={() => onAction(title)}
-            className="group flex flex-col gap-3 p-4 rounded-2xl text-left transition-all duration-200"
-            style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)";
-              (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.12)";
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)";
-              (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)";
-            }}
-          >
-            <div className="flex items-start justify-between">
-              <div
-                className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
-              >
-                <Icon className="w-4 h-4 text-white/30 group-hover:text-[#00A3FF] transition-colors duration-200" />
-              </div>
-              <span
-                className="text-[9px] text-white/20 px-1.5 py-0.5 rounded-full uppercase tracking-widest"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", fontFamily: "Geist Mono, 'SF Mono', monospace" }}
-              >
-                {tag}
-              </span>
-            </div>
-            <div>
-              <div className="text-[13px] font-medium text-white/70 group-hover:text-white mb-1 transition-colors duration-200" style={{ fontFamily: SF }}>{title}</div>
-              <div className="text-[12px] text-white/30 leading-relaxed" style={{ fontFamily: SF }}>{desc}</div>
-            </div>
-          </button>
-        ))}
-      </div>
-
       {/* Status strip */}
-      <div className="flex items-center gap-6 text-[11px] text-white/25" style={{ fontFamily: "Geist Mono, 'SF Mono', monospace" }}>
-        <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-          <span>Air-Gapped Active</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#00A3FF]" />
-          <span>Local Inference Ready</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#8B5CF6]" />
-          <span>{MOCK_KNOWLEDGE_BASE.length} Documents Indexed</span>
-        </div>
+      <div className="hidden md:flex items-center gap-3 text-[11px]" style={{ fontFamily: "Geist Mono, 'SF Mono', monospace" }}>
+        {[
+          "Air-Gapped Active",
+          "Local Inference Ready",
+          `${MOCK_KNOWLEDGE_BASE.length} Documents Indexed`
+        ].map((label) => (
+          <div key={label} className="es-status-item relative overflow-hidden px-4 py-1.5 rounded-full flex items-center justify-center bg-black/60 backdrop-blur-xl shadow-[0_8px_32px_-8px_rgba(255,255,255,0.08),inset_0_0_0_1px_rgba(255,255,255,0.08),inset_0_-4px_20px_-4px_rgba(255,255,255,0.12)] text-white/50">
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 pointer-events-none" />
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 pointer-events-none" />
+            <span className="relative z-10 tracking-wide uppercase">{label}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -752,6 +886,15 @@ function Composer({ onExecute, isExecuting }: { onExecute: (q: string, files: Fi
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [focused, setFocused] = useState(false);
   const canExecute = (query.trim().length > 0 || files.length > 0) && !isExecuting;
+  const compRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!compRef.current) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo(compRef.current, { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 1.5, ease: "power3.out", delay: 0.8 });
+    });
+    return () => ctx.revert();
+  }, []);
 
   const handleExecute = useCallback(() => {
     if (!canExecute) return;
@@ -770,8 +913,8 @@ function Composer({ onExecute, isExecuting }: { onExecute: (q: string, files: Fi
   }, [query]);
 
   return (
-    <div className="shrink-0 px-4 pb-5 pt-2" style={{ background: "rgba(5,5,7,0.95)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-      <div className="max-w-[720px] mx-auto">
+    <div ref={compRef} className="shrink-0 px-4 pb-5 pt-2" style={{ background: "rgba(5,5,7,0.95)" }}>
+      <div className="max-w-[840px] mx-auto">
 
         {/* File attachments */}
         {files.length > 0 && (
@@ -787,16 +930,35 @@ function Composer({ onExecute, isExecuting }: { onExecute: (q: string, files: Fi
         )}
 
         {/* Composer shell */}
-        <BorderBeam size="md" colorVariant="ice" brightness={4} glowSize={2.5} saturation={2} hueRange={0} strength={1.2}>
-        <div
-          className="relative rounded-2xl overflow-hidden transition-all duration-300"
+        <div 
+          className="relative rounded-2xl p-[1px] group transition-all duration-300"
           style={{
-            background: focused ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.03)",
-            border: focused ? "1px solid rgba(255,255,255,0.15)" : "1px solid rgba(255,255,255,0.08)",
-            boxShadow: focused ? "0 0 0 3px rgba(0,163,255,0.06), 0 20px 60px rgba(0,0,0,0.5)" : "0 20px 60px rgba(0,0,0,0.3)",
-            backdropFilter: "blur(20px)",
+             boxShadow: focused 
+               ? "0 20px 60px rgba(0,0,0,0.5), 0 0 50px -10px rgba(161, 161, 170, 0.3)" 
+               : "0 20px 60px rgba(0,0,0,0.3), 0 0 30px -10px rgba(161, 161, 170, 0.15)",
           }}
         >
+          {/* Animated Neon Border Layer */}
+          <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+             <div className="absolute inset-[-50%] animate-[spin_4s_linear_infinite]" style={{
+                background: "conic-gradient(from 0deg, transparent 0%, transparent 60%, rgba(161, 161, 170, 0.5) 80%, rgba(161, 161, 170, 1) 100%)",
+             }} />
+          </div>
+
+          {/* Static fallback border */}
+          <div className="absolute inset-0 rounded-2xl border border-white/5 pointer-events-none" />
+
+          {/* Inner Content Layer */}
+          <div
+            className="relative rounded-[15px] overflow-hidden transition-all duration-300 z-10 h-full w-full"
+            style={{
+              background: focused ? "rgba(20,20,25,0.85)" : "rgba(10,10,12,0.75)",
+              boxShadow: focused 
+                ? "inset 0 0 60px -10px rgba(161,161,170,0.2)" 
+                : "inset 0 0 30px -10px rgba(161,161,170,0.1)",
+              backdropFilter: "blur(24px)",
+            }}
+          >
           <div className="flex items-end gap-3 px-4 py-3.5">
             <label className="shrink-0 mb-0.5 text-white/25 hover:text-white/60 cursor-pointer transition-colors duration-150">
               <input type="file" multiple className="hidden" onChange={e => e.target.files && setFiles(p => [...p, ...Array.from(e.target.files!)])} disabled={isExecuting} />
@@ -848,7 +1010,7 @@ function Composer({ onExecute, isExecuting }: { onExecute: (q: string, files: Fi
             </div>
           </div>
         </div>
-        </BorderBeam>
+        </div>
       </div>
     </div>
   );
@@ -861,6 +1023,17 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
   const [execStatus, setExecStatus] = useState<ExecutionStatus>("idle");
   const [showArtifacts, setShowArtifacts] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const topbarRef = useRef<HTMLDivElement>(null);
+  const bgRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!topbarRef.current || !bgRef.current) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo(bgRef.current, { opacity: 0 }, { opacity: 1, duration: 2.0, ease: "power2.out" });
+      gsap.fromTo(topbarRef.current, { y: -40, opacity: 0 }, { y: 0, opacity: 1, duration: 1.5, ease: "power3.out", delay: 0.2 });
+    });
+    return () => ctx.revert();
+  }, []);
 
   const scrollToBottom = useCallback(() => {
     if (scrollRef.current) scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -907,17 +1080,43 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
   return (
     <div className="flex h-screen w-full overflow-hidden" style={{ background: "#050507", fontFamily: SF }}>
 
-      {/* Ambient background glow — matching landing page atmosphere */}
-      <div className="fixed inset-0 pointer-events-none z-0">
+      {/* Ambient background glow — animated atmosphere */}
+      <div ref={bgRef} className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <style>{`
+          @keyframes float-1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(-50px, 50px) scale(1.2); }
+          }
+          @keyframes float-2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(50px, -50px) scale(1.15); }
+          }
+        `}</style>
         <div
-          className="absolute top-[-20%] left-[20%] w-[600px] h-[600px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(0,163,255,0.04) 0%, transparent 70%)", filter: "blur(60px)" }}
+          className="absolute top-[-20%] left-[10%] w-[800px] h-[800px] rounded-full"
+          style={{ 
+            background: "radial-gradient(circle, rgba(161,161,170,0.06) 0%, transparent 60%)", 
+            filter: "blur(80px)",
+            animation: "float-1 20s ease-in-out infinite"
+          }}
         />
         <div
-          className="absolute bottom-[-10%] right-[10%] w-[400px] h-[400px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(139,92,246,0.03) 0%, transparent 70%)", filter: "blur(60px)" }}
+          className="absolute bottom-[-20%] right-[10%] w-[600px] h-[600px] rounded-full"
+          style={{ 
+            background: "radial-gradient(circle, rgba(161,161,170,0.05) 0%, transparent 60%)", 
+            filter: "blur(60px)",
+            animation: "float-2 25s ease-in-out infinite"
+          }}
         />
       </div>
+
+      {/* Mobile Overlay */}
+      {!sidebarCollapsed && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[90]"
+          onClick={() => setSidebarCollapsed(true)}
+        />
+      )}
 
       <Sidebar
         collapsed={sidebarCollapsed}
@@ -929,17 +1128,20 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
 
       {/* Main — does NOT scroll, it's a fixed layout */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative z-10">
-        <Topbar onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)} sidebarCollapsed={sidebarCollapsed} />
+        <div ref={topbarRef} className="shrink-0 z-20">
+          <Topbar onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)} sidebarCollapsed={sidebarCollapsed} />
+        </div>
 
         {/* Chat area — also does NOT overflow-scroll, only the message list does */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {messages.length === 0 ? (
-            <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.08) transparent" }}>
+            <div data-lenis-prevent="true" className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.08) transparent" }}>
               <EmptyState onAction={q => handleExecute(q, [])} />
             </div>
           ) : (
             <div
               ref={scrollRef}
+              data-lenis-prevent="true"
               className="flex-1 overflow-y-auto py-8"
               style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.08) transparent" }}
             >

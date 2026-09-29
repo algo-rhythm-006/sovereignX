@@ -248,6 +248,7 @@ const ScrollExpand: React.FC<ScrollExpandProps> = ({
     return (
         <div
             ref={rootRef}
+            data-lenis-prevent={!useWindowScroll ? "true" : undefined}
             className={`relative w-full h-full ${useWindowScroll ? '' : 'overflow-y-auto overflow-x-hidden overscroll-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden'} ${className}`.trim()}
             style={style}
             {...rest}

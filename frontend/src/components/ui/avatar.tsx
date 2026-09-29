@@ -15,7 +15,8 @@ export type AvatarColor =
   | "indigo"
   | "lime"
   | "turquoise"
-  | "violet";
+  | "violet"
+  | "white";
 export type AvatarSize = "sm" | "md" | "lg";
 export type AvatarShape = "circle" | "square" | "squircle";
 
@@ -150,6 +151,15 @@ const PRESETS: Record<
     iris: "linear-gradient(135deg, #ffffff 0%, #ede9fe 100%)",
     shine:
       "radial-gradient(ellipse at 30% 24%, rgba(255,255,255,.75) 0%, rgba(255,255,255,.1) 50%, transparent 70%)",
+  },
+  white: {
+    gradient:
+      "radial-gradient(circle at 50% 45%, #a1a1aa 0%, #d4d4d8 40%, #f4f4f5 68%, #ffffff 100%)",
+    boxShadow:
+      "0 0 4px 0px rgba(255,255,255,.35), 0 0 16px 6px rgba(255,255,255,.18), inset 0 0 0 1px rgba(255,255,255,.3)",
+    iris: "linear-gradient(135deg, #3f3f46 0%, #000000 100%)",
+    shine:
+      "radial-gradient(ellipse at 30% 24%, rgba(255,255,255,.9) 0%, rgba(255,255,255,.2) 50%, transparent 70%)",
   },
 };
 
