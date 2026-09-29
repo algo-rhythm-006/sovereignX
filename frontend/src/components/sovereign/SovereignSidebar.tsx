@@ -1,11 +1,11 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import { gsap } from "gsap";
 import { 
   ScanSearch, FileCheck, Terminal, 
   Search, Folder, Lock, Database, GitBranch,
-  ChevronLeft, ChevronRight, LogOut, Settings, Plus, User, FileText, Cpu
+  ChevronLeft, ChevronRight, LogOut, Settings, Plus, User, FileText, Cpu, Image
 } from "lucide-react";
-import { MOCK_KNOWLEDGE_BASE, MOCK_HISTORY, MOCK_ARTIFACTS } from "./mockWorkspaceData";
+import { MOCK_HISTORY, MOCK_ARTIFACTS } from "./mockWorkspaceData";
 import { UserProfileData } from "./types";
 import { LiquidButton } from "@/components/ui/liquid-glass-card";
 import Avatar from "@/components/ui/avatar";
@@ -21,6 +21,27 @@ interface SidebarProps {
 export function SovereignSidebar({ collapsed, setCollapsed, user, onLogout, onNewExecution }: SidebarProps) {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  const [documents, setDocuments] = useState<any[]>([]);
+
+  const fetchDocuments = useCallback(async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_AI_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiUrl}/api/v1/documents`);
+      const data = await res.json();
+      setDocuments(data.documents || []);
+    } catch (err) {
+      console.error("Failed to fetch documents", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDocuments();
+    
+    const handleRefetch = () => fetchDocuments();
+    window.addEventListener("refetchKnowledgeBase", handleRefetch);
+    return () => window.removeEventListener("refetchKnowledgeBase", handleRefetch);
+  }, [fetchDocuments]);
 
   useEffect(() => {
     if (sidebarRef.current) {
@@ -89,6 +110,9 @@ export function SovereignSidebar({ collapsed, setCollapsed, user, onLogout, onNe
         <button className="w-10 h-10 rounded-lg text-[#A1A1AA] hover:text-white hover:bg-white/5 flex items-center justify-center transition-colors" title="Search">
           <Search className="w-[18px] h-[18px]" />
         </button>
+        <a href="/image-gen" className="w-10 h-10 rounded-lg text-[#00E5FF]/70 hover:text-[#00E5FF] hover:bg-[#00E5FF]/10 flex items-center justify-center transition-colors" title="Image Engine">
+          <Image className="w-[18px] h-[18px]" />
+        </a>
         <button className="w-10 h-10 rounded-lg text-[#A1A1AA] hover:text-white hover:bg-white/5 flex items-center justify-center transition-colors" title="Audit System Architecture">
           <ScanSearch className="w-[18px] h-[18px]" />
         </button>
@@ -141,6 +165,12 @@ export function SovereignSidebar({ collapsed, setCollapsed, user, onLogout, onNe
               </div>
               <span className="text-[10px] font-mono bg-[#111] px-1.5 py-0.5 rounded text-gray-500 border border-[#222]">⌘K</span>
             </button>
+            <a href="/image-gen" className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-[#0A0A0A] border border-[#222] text-gray-400 hover:text-white transition-colors">
+              <div className="flex items-center gap-2">
+                <Image className="w-4 h-4 text-[#00E5FF]/70" />
+                <span className="text-sm text-gray-300">Image Engine</span>
+              </div>
+            </a>
           </div>
 
           {/* Quick Actions (Collapsible style) */}
@@ -180,17 +210,21 @@ export function SovereignSidebar({ collapsed, setCollapsed, user, onLogout, onNe
                 <Database className="w-3.5 h-3.5" />
                 <span className="text-sm font-medium">Knowledge Base</span>
               </div>
-              <span className="text-xs text-gray-500 font-mono">{MOCK_KNOWLEDGE_BASE.length}</span>
+              <span className="text-xs text-gray-500 font-mono">{documents.length}</span>
             </div>
             <div className="ml-6 border-l border-[#222] space-y-0.5">
-              {MOCK_KNOWLEDGE_BASE.map((file, i) => (
-                <div key={file.id} className={`group flex flex-col px-3 py-1.5 rounded-r-md cursor-pointer ${i === 0 ? 'bg-gradient-to-r from-[#00E5FF]/10 to-transparent border-l-2 border-[#00E5FF] shadow-[inset_0_0_10px_rgba(0,229,255,0.05)]' : 'hover:bg-[#111] transition-colors'}`}>
-                  <div className="flex items-center gap-2">
-                    <FileText className={`w-3.5 h-3.5 ${i === 0 ? 'text-[#00E5FF] drop-shadow-[0_0_8px_rgba(0,229,255,0.8)]' : 'text-gray-500 group-hover:text-[#00E5FF]'}`} />
-                    <span className={`text-sm truncate ${i === 0 ? 'text-[#00E5FF] font-medium' : 'text-gray-400 group-hover:text-gray-200'}`}>{file.filename}</span>
+              {documents.length === 0 ? (
+                <div className="px-3 py-1.5 text-xs text-gray-500 italic">No documents uploaded</div>
+              ) : (
+                documents.map((doc: any, i: number) => (
+                  <div key={doc.filename} className={`group flex flex-col px-3 py-1.5 rounded-r-md cursor-pointer ${i === 0 ? 'bg-gradient-to-r from-[#00E5FF]/10 to-transparent border-l-2 border-[#00E5FF] shadow-[inset_0_0_10px_rgba(0,229,255,0.05)]' : 'hover:bg-[#111] transition-colors'}`}>
+                    <div className="flex items-center gap-2">
+                      <FileText className={`w-3.5 h-3.5 ${i === 0 ? 'text-[#00E5FF] drop-shadow-[0_0_8px_rgba(0,229,255,0.8)]' : 'text-gray-500 group-hover:text-[#00E5FF]'}`} />
+                      <span className={`text-sm truncate ${i === 0 ? 'text-[#00E5FF] font-medium' : 'text-gray-400 group-hover:text-gray-200'}`} title={doc.filename}>{doc.filename}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 

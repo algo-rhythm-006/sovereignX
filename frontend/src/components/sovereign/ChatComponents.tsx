@@ -8,7 +8,6 @@ import { LiquidGlassCard } from "@/components/ui/liquid-glass-card";
 import { ThinkingOrb } from "@/components/ui/thinking-orbs";
 import type { OrbState } from "@/components/ui/thinking-orbs";
 import { ChatMessageData, ExecutionStatus, TimelineStep, TimelineStepStatus } from "./types";
-import { MOCK_ARTIFACTS } from "./mockWorkspaceData";
 
 // --- CHAT COMPOSER ---
 interface ChatComposerProps {
@@ -289,7 +288,7 @@ export function ArtifactPanel({ show }: { show: boolean }) {
           <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest font-mono">Audit Deliverables & Governance Artifacts</span>
         </div>
         <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {MOCK_ARTIFACTS.map(artifact => (
+          {([] as any[]).map(artifact => (
             <div key={artifact.id} className="flex flex-col p-3 rounded-lg border border-[#222] bg-[#0A0A0A] hover:border-cyan-500/50 hover:shadow-[0_0_15px_rgba(0,163,255,0.1)] transition-all group">
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2">
