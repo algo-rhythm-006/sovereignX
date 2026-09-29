@@ -8,6 +8,7 @@ import {
 import { MOCK_KNOWLEDGE_BASE, MOCK_HISTORY, MOCK_ARTIFACTS } from "./mockWorkspaceData";
 import { UserProfileData } from "./types";
 import { LiquidButton } from "@/components/ui/liquid-glass-card";
+import Avatar from "@/components/ui/avatar";
 
 interface SidebarProps {
   collapsed: boolean;
@@ -48,14 +49,15 @@ export function SovereignSidebar({ collapsed, setCollapsed, user, onLogout, onNe
       className={`h-full flex flex-col bg-[#000000] border-r border-[#151515] overflow-hidden relative z-50 shrink-0 absolute md:relative ${collapsed ? 'max-md:hidden' : 'max-md:w-full max-md:absolute max-md:inset-y-0 max-md:left-0'}`}
       style={{ width: 320 }}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 pb-2 shrink-0">
-        <div className={`flex items-center gap-3 overflow-hidden ${collapsed ? 'justify-center w-full' : ''}`}>
-          <div className="w-8 h-8 rounded-lg bg-[#111] flex items-center justify-center border border-[#333] shadow-[0_0_10px_rgba(255,255,255,0.05)] shrink-0">
-            <ScanSearch className="w-4 h-4 text-white" />
+      {/* Header - EXPANDED ONLY */}
+      <div className="flex items-center justify-between p-4 pb-2 shrink-0" style={{ display: collapsed ? 'none' : 'flex' }}>
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00E5FF]/20 to-[#111] flex items-center justify-center border border-[#00E5FF]/30 shadow-[0_0_15px_rgba(0,229,255,0.2)] shrink-0 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-t from-[#00E5FF]/10 to-transparent"></div>
+            <ScanSearch className="w-4 h-4 text-[#00E5FF] drop-shadow-[0_0_5px_rgba(0,229,255,0.5)] relative z-10" />
           </div>
-          <div className="flex flex-col whitespace-nowrap" style={{ opacity: collapsed ? 0 : 1, display: collapsed ? 'none' : 'flex' }}>
-            <span className="font-semibold text-sm text-gray-200 flex items-center gap-2">SovereignX <span className="text-[10px] bg-[#222] text-gray-400 px-1.5 py-0.5 rounded-sm">v2</span></span>
+          <div className="flex flex-col whitespace-nowrap">
+            <span className="font-semibold text-sm text-gray-200 flex items-center gap-2">SovereignX <span className="text-[10px] bg-gradient-to-r from-[#00E5FF]/20 to-transparent border border-[#00E5FF]/30 text-[#00E5FF] px-1.5 py-0.5 rounded-sm shadow-[0_0_8px_rgba(0,229,255,0.2)]">v2</span></span>
           </div>
         </div>
       </div>
@@ -70,36 +72,56 @@ export function SovereignSidebar({ collapsed, setCollapsed, user, onLogout, onNe
       </button>
 
       {/* Collapsed view icons only */}
-      <div className="flex-1 flex flex-col py-4 gap-6 items-center" style={{ display: collapsed ? 'flex' : 'none' }}>
-        <button onClick={onNewExecution} className="w-10 h-10 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30" title="New Execution">
-          <Plus className="w-5 h-5" />
+      <div className="flex-1 flex flex-col py-4 gap-3 items-center w-[72px]" style={{ display: collapsed ? 'flex' : 'none' }}>
+        {/* Top Avatar Orb */}
+        <div className="mb-2">
+          <Avatar size="sm" color="cyan" shape="circle" />
+        </div>
+
+        {/* New Chat / Execution Button */}
+        <button onClick={onNewExecution} className="w-10 h-10 rounded-[12px] bg-black/60 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] hover:shadow-[inset_0_0_0_1px_rgba(161,161,170,0.4)] hover:bg-[#A1A1AA]/10 flex items-center justify-center transition-all group" title="New Execution">
+          <Plus className="w-5 h-5 text-[#A1A1AA] group-hover:text-white" />
         </button>
-        <button className="w-10 h-10 rounded-lg text-gray-400 hover:text-white flex items-center justify-center" title="Search">
-          <Search className="w-5 h-5" />
+
+        <div className="w-6 h-[1px] bg-white/5 my-1" />
+
+        {/* Icons */}
+        <button className="w-10 h-10 rounded-lg text-[#A1A1AA] hover:text-white hover:bg-white/5 flex items-center justify-center transition-colors" title="Search">
+          <Search className="w-[18px] h-[18px]" />
         </button>
-        <div className="w-6 h-[1px] bg-[#1E293B]" />
-        <button className="w-10 h-10 rounded-lg text-gray-400 hover:text-cyan-400 flex items-center justify-center" title="Audit System Architecture">
-          <ScanSearch className="w-5 h-5" />
+        <button className="w-10 h-10 rounded-lg text-[#A1A1AA] hover:text-white hover:bg-white/5 flex items-center justify-center transition-colors" title="Audit System Architecture">
+          <ScanSearch className="w-[18px] h-[18px]" />
         </button>
-        <button className="w-10 h-10 rounded-lg text-gray-400 hover:text-cyan-400 flex items-center justify-center" title="Extract Compliance">
-          <FileCheck className="w-5 h-5" />
+        <button className="w-10 h-10 rounded-lg text-[#A1A1AA] hover:text-white hover:bg-white/5 flex items-center justify-center transition-colors" title="Extract Compliance">
+          <FileCheck className="w-[18px] h-[18px]" />
         </button>
-        <button className="w-10 h-10 rounded-lg text-gray-400 hover:text-cyan-400 flex items-center justify-center" title="Execute Sandbox">
-          <Terminal className="w-5 h-5" />
+        <button className="w-10 h-10 rounded-lg text-[#A1A1AA] hover:text-white hover:bg-white/5 flex items-center justify-center transition-colors" title="Execute Sandbox">
+          <Terminal className="w-[18px] h-[18px]" />
         </button>
-        <div className="w-6 h-[1px] bg-[#1E293B]" />
-        <button className="w-10 h-10 rounded-lg text-gray-400 hover:text-white flex items-center justify-center" title="Knowledge Base">
-          <Database className="w-5 h-5" />
+        
+        <div className="w-6 h-[1px] bg-white/5 my-1" />
+
+        <button className="w-10 h-10 rounded-lg text-[#A1A1AA] hover:text-white hover:bg-white/5 flex items-center justify-center transition-colors" title="Knowledge Base">
+          <Database className="w-[18px] h-[18px]" />
         </button>
+
+        <div className="mt-auto flex flex-col gap-3 items-center">
+          <button className="w-10 h-10 rounded-lg text-[#A1A1AA] hover:text-white hover:bg-white/5 flex items-center justify-center transition-colors" title="Settings">
+             <Settings className="w-[18px] h-[18px]" />
+          </button>
+          <div className="mb-2">
+            <Avatar size="sm" color="white" shape="circle" />
+          </div>
+        </div>
       </div>
 
       {/* Expanded Content */}
-      <div ref={contentRef} className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar flex flex-col pb-20">
+      <div ref={contentRef} data-lenis-prevent="true" className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar flex flex-col pb-20">
         
         {/* Tabs similar to Framer */}
         <div className="px-4 py-3 border-b border-[#151515]">
           <div className="flex p-1 bg-[#111] rounded-full">
-            <button className="flex-1 px-3 py-1.5 bg-[#222] text-white text-xs font-medium rounded-full shadow-sm">Workspace</button>
+            <button className="flex-1 px-3 py-1.5 bg-gradient-to-r from-[#00E5FF]/20 to-transparent border border-[#00E5FF]/30 text-[#00E5FF] text-xs font-medium rounded-full shadow-[inset_0_0_10px_rgba(0,229,255,0.1)]">Workspace</button>
             <button className="flex-1 px-3 py-1.5 text-gray-500 hover:text-gray-300 text-xs font-medium rounded-full">Data</button>
             <button className="flex-1 px-3 py-1.5 text-gray-500 hover:text-gray-300 text-xs font-medium rounded-full">Rules</button>
           </div>
@@ -107,16 +129,17 @@ export function SovereignSidebar({ collapsed, setCollapsed, user, onLogout, onNe
 
         <div className="p-4 space-y-6">
           {/* Actions */}
-          <div className="flex items-center gap-2">
-            <button onClick={onNewExecution} className="flex items-center gap-2 px-3 py-1.5 rounded bg-transparent hover:bg-[#111] text-gray-300 transition-colors group border border-transparent hover:border-[#333]">
-              <Plus className="w-4 h-4 text-cyan-500 drop-shadow-[0_0_8px_rgba(0,163,255,0.8)] group-hover:scale-110 transition-transform" />
+          <div className="flex flex-col gap-3">
+            <button onClick={onNewExecution} className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg bg-gradient-to-r from-[#00E5FF]/20 via-[#00E5FF]/5 to-transparent border-l-[3px] border-[#00E5FF] text-white transition-all hover:from-[#00E5FF]/30 shadow-[inset_0_0_20px_rgba(0,229,255,0.05)]">
+              <Plus className="w-4 h-4 text-[#00E5FF]" />
+              <span className="text-sm font-medium">New Execution</span>
             </button>
-            <button className="flex-1 flex items-center justify-between px-3 py-1.5 rounded bg-[#111] border border-[#222] text-gray-400 hover:text-white transition-colors group">
+            <button className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-[#0A0A0A] border border-[#222] text-gray-400 hover:text-white transition-colors">
               <div className="flex items-center gap-2">
-                <Search className="w-3.5 h-3.5" />
+                <Search className="w-4 h-4" />
                 <span className="text-sm">Search</span>
               </div>
-              <span className="text-[10px] font-mono opacity-50">⌘K</span>
+              <span className="text-[10px] font-mono bg-[#111] px-1.5 py-0.5 rounded text-gray-500 border border-[#222]">⌘K</span>
             </button>
           </div>
 
@@ -161,10 +184,10 @@ export function SovereignSidebar({ collapsed, setCollapsed, user, onLogout, onNe
             </div>
             <div className="ml-6 border-l border-[#222] space-y-0.5">
               {MOCK_KNOWLEDGE_BASE.map((file, i) => (
-                <div key={file.id} className={`group flex flex-col px-3 py-1.5 rounded-r-md cursor-pointer ${i === 0 ? 'bg-[#003366]/30 border border-[#0066FF]/30 shadow-[inset_0_0_10px_rgba(0,102,255,0.1)]' : 'hover:bg-[#111] transition-colors'}`}>
+                <div key={file.id} className={`group flex flex-col px-3 py-1.5 rounded-r-md cursor-pointer ${i === 0 ? 'bg-gradient-to-r from-[#00E5FF]/10 to-transparent border-l-2 border-[#00E5FF] shadow-[inset_0_0_10px_rgba(0,229,255,0.05)]' : 'hover:bg-[#111] transition-colors'}`}>
                   <div className="flex items-center gap-2">
-                    <FileText className={`w-3.5 h-3.5 ${i === 0 ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(0,163,255,0.8)]' : 'text-gray-500 group-hover:text-cyan-400'}`} />
-                    <span className={`text-sm truncate ${i === 0 ? 'text-cyan-100 font-medium' : 'text-gray-400 group-hover:text-gray-200'}`}>{file.filename}</span>
+                    <FileText className={`w-3.5 h-3.5 ${i === 0 ? 'text-[#00E5FF] drop-shadow-[0_0_8px_rgba(0,229,255,0.8)]' : 'text-gray-500 group-hover:text-[#00E5FF]'}`} />
+                    <span className={`text-sm truncate ${i === 0 ? 'text-[#00E5FF] font-medium' : 'text-gray-400 group-hover:text-gray-200'}`}>{file.filename}</span>
                   </div>
                 </div>
               ))}
@@ -213,32 +236,68 @@ export function SovereignSidebar({ collapsed, setCollapsed, user, onLogout, onNe
           </div>
         </div>
 
+        {/* Upgrade Pro Card */}
+        <div className="mt-8 px-4 pb-4">
+          <div className="relative rounded-2xl bg-gradient-to-b from-[#00E5FF]/10 to-[#000000] border border-[#00E5FF]/20 p-4 overflow-hidden shadow-[0_0_15px_rgba(0,229,255,0.1)]">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#00E5FF]/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+            <div className="flex items-center justify-between mb-2 relative z-10">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-[#00E5FF]/20 flex items-center justify-center">
+                  <ScanSearch className="w-3.5 h-3.5 text-[#00E5FF]" />
+                </div>
+                <span className="text-sm font-semibold text-white">Upgrade Pro!</span>
+              </div>
+              <button className="text-gray-400 hover:text-white">
+                <Settings className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <p className="text-xs text-gray-400 mb-4 relative z-10">Upgrade to Pro and elevate your experience today</p>
+            <div className="flex items-center gap-3 relative z-10">
+              <button className="flex-1 bg-[#00E5FF] hover:bg-[#00E5FF]/90 text-black text-xs font-semibold py-2 rounded-lg transition-colors">
+                ✨ Upgrade
+              </button>
+              <button className="text-xs text-gray-400 hover:text-white transition-colors">
+                Learn More
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      {/* User Profile / Footer */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-[#000000] border-t border-[#151515] flex items-center gap-3">
-        <div className="w-8 h-8 rounded-md bg-[#111] border border-[#333] flex items-center justify-center shrink-0">
-          <User className="w-4 h-4 text-cyan-400" />
+      {/* User Profile / Footer - EXPANDED ONLY */}
+      <div style={{ display: collapsed ? 'none' : 'block' }}>
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#000000] via-[#000000]/80 to-transparent z-10 pointer-events-none h-32"></div>
+        <div className="absolute bottom-4 left-4 right-4 z-20">
+          <div className="relative bg-[#050505]/90 backdrop-blur-xl border border-[#00E5FF]/20 p-2.5 rounded-2xl flex items-center justify-between transition-all duration-300 shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_0_15px_rgba(0,229,255,0.05)] overflow-hidden group hover:border-[#00E5FF]/40 hover:shadow-[0_4px_20px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(0,229,255,0.1)] w-auto">
+            
+            {/* Subtle background glow on hover */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#00E5FF]/0 via-[#00E5FF]/5 to-[#00E5FF]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+            <div className="flex items-center gap-3 relative z-10">
+              {/* Avatar with Badge Gradient Ring */}
+              <div className="relative">
+                <div className="absolute -inset-0.5 bg-gradient-to-br from-[#00E5FF] to-transparent rounded-full opacity-50 blur-[2px] group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="w-9 h-9 rounded-full bg-[#111] border border-[#222] flex items-center justify-center shrink-0 overflow-hidden relative z-10">
+                  <User className="w-4 h-4 text-[#00E5FF]" />
+                </div>
+                <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 rounded-full border-[2px] border-[#050505] z-20 shadow-[0_0_5px_rgba(52,211,153,0.5)]"></div>
+              </div>
+              
+              <div className="flex-1 flex flex-col overflow-hidden py-0.5">
+                <span className="text-sm text-gray-100 font-semibold truncate tracking-tight">{user?.name || "Jacob Cooper"}</span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-[10px] bg-gradient-to-r from-[#00E5FF]/20 to-transparent border border-[#00E5FF]/30 text-[#00E5FF] px-1.5 py-[1px] rounded-sm uppercase tracking-wider font-semibold">Pro</span>
+                  <span className="text-[10px] text-gray-500 truncate">{user?.email || "jacob.cooper@mail.com"}</span>
+                </div>
+              </div>
+            </div>
+            
+            <button onClick={onLogout} className="p-2 text-gray-400 hover:text-[#00E5FF] rounded-full hover:bg-[#00E5FF]/10 transition-colors shrink-0 relative z-10 group/btn">
+              <Settings className="w-4 h-4 group-hover/btn:rotate-90 transition-transform duration-300" />
+            </button>
+          </div>
         </div>
-        {!collapsed && (
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <span className="text-sm text-white font-medium truncate">{user?.name || "Authenticated User"}</span>
-            <span className="text-[10px] text-gray-500 truncate flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-              {user?.status || "Authenticated"}
-            </span>
-          </div>
-        )}
-        {!collapsed && (
-          <div className="flex items-center gap-1 shrink-0">
-            <button className="p-1.5 text-gray-500 hover:text-white rounded-md hover:bg-white/10 transition-colors">
-              <Settings className="w-4 h-4" />
-            </button>
-            <button onClick={onLogout} className="p-1.5 text-gray-500 hover:text-red-400 rounded-md hover:bg-white/10 transition-colors">
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-        )}
       </div>
 
       <style jsx>{`

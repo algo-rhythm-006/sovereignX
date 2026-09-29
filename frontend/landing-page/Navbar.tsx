@@ -45,7 +45,7 @@ export function Navbar({ isMuted, toggleMute, volume, onVolumeChange }: NavbarPr
       <div className="flex items-center nav-logo opacity-0">
         <div className="relative overflow-hidden rounded-[1.5rem] bg-black/20 shadow-[0_0_20px_rgba(0,163,255,0.3)] border border-white/10 p-1">
           <Image
-            src="/logo.png"
+            src="/logo.svg"
             alt="Logo"
             width={48}
             height={48}
