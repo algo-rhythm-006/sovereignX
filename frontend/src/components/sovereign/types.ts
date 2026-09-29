@@ -29,6 +29,16 @@ export interface ChatAttachment {
   size?: string;
 }
 
+export interface StreamStep {
+  step: number | string;
+  title: string;
+  status: "in_progress" | "completed" | "reflection";
+  details: string;
+  final_summary?: string;
+  deliverables?: string[];
+  tool_output?: any;
+}
+
 export interface ChatMessageData {
   id: string;
   role: "user" | "assistant";
@@ -42,6 +52,7 @@ export interface ChatMessageData {
     rag?: boolean;
     governed?: boolean;
   };
+  steps?: StreamStep[];
 }
 
 export interface Artifact {

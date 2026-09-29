@@ -44,3 +44,35 @@ ehthumbs.db
 # Temporary & AI Scratch Directories
 .gemini/
 scratch/
+
+# Python / FastAPI
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.pytest_cache/
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# AI / Vector DB / Outputs
+chroma_db/
+output_deliverables/
+assets/generated/
+ai_backend/generated_images/
+knowledge_base/

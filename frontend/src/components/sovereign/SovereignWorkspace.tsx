@@ -8,7 +8,7 @@ import {
   User, Folder, Settings, Bell, HelpCircle, Cpu, Network,
   Download, Paperclip, X, ArrowUp, Activity, CheckCircle,
   Clock, GitBranch, ChevronDown, Zap, Copy, ThumbsUp, ThumbsDown,
-  RotateCcw, Workflow, Check, Menu, PanelLeft, PanelLeftClose
+  RotateCcw, Workflow, Check, Menu, PanelLeft, PanelLeftClose, Image, Sparkles
 } from "lucide-react";
 import { ThinkingOrb } from "@/components/ui/thinking-orbs";
 import type { OrbState } from "@/components/ui/thinking-orbs";
@@ -17,7 +17,6 @@ import { BorderBeam } from "@/components/ui/border-beam";
 import { LiquidGlassCard, LiquidButton } from "@/components/ui/liquid-glass-card";
 import FolderFloat from "@/components/ui/floating-folder";
 import { ExecutionStatus, ChatMessageData, UserProfileData, TimelineStep, TimelineStepStatus } from "./types";
-import { MOCK_KNOWLEDGE_BASE, MOCK_ARTIFACTS, MOCK_HISTORY } from "./mockWorkspaceData";
 
 // ─── FONT ──────────────────────────────────────────────────────────────────────
 const SF = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, sans-serif';
@@ -54,17 +53,49 @@ const QUICK_ACTIONS = [
 // ─── SIDEBAR ───────────────────────────────────────────────────────────────────
 function Sidebar({
   collapsed, setCollapsed, user, onLogout, onNewExecution,
+  activeMode, setActiveMode,
+  historyList = [],
+  searchQuery = "",
+  setSearchQuery,
+  onHistoryClick
 }: {
   collapsed: boolean;
   setCollapsed: (v: boolean) => void;
   user: UserProfileData | null;
   onLogout: () => void;
   onNewExecution: () => void;
+  activeMode: "chat" | "image";
+  setActiveMode: (v: "chat" | "image") => void;
+  historyList?: any[];
+  searchQuery?: string;
+  setSearchQuery?: (v: string) => void;
+  onHistoryClick?: (id: string) => void;
 }) {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [kbOpen, setKbOpen] = useState(true);
   const [historyOpen, setHistoryOpen] = useState(true);
   const [folderOpen, setFolderOpen] = useState(false);
+
+  const [documents, setDocuments] = useState<any[]>([]);
+  
+  const fetchDocuments = useCallback(async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_AI_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiUrl}/api/v1/documents`);
+      const data = await res.json();
+      setDocuments(data.documents || []);
+    } catch (err) {
+      console.error("Failed to fetch documents", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDocuments();
+    
+    const handleRefetch = () => fetchDocuments();
+    window.addEventListener("refetchKnowledgeBase", handleRefetch);
+    return () => window.removeEventListener("refetchKnowledgeBase", handleRefetch);
+  }, [fetchDocuments]);
 
   useEffect(() => {
     if (!sidebarRef.current) return;
@@ -145,22 +176,33 @@ function Sidebar({
           {/* Navigation Icons */}
           {[
             { icon: Search, title: "Search" },
+            { icon: Image, title: "Image Engine" },
             { icon: ScanSearch, title: "Audit System Architecture" },
             { icon: FileCheck, title: "Extract Compliance" },
             { icon: Terminal, title: "Execute Sandbox" },
             { icon: Database, title: "Knowledge Base" },
-          ].map((item, i) => (
-            <button 
-              key={i}
-              onClick={() => setCollapsed(false)} 
-              className="relative overflow-hidden w-12 h-12 rounded-xl flex items-center justify-center text-white/50 hover:text-white bg-black/20 hover:bg-black/40 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_-4px_20px_-4px_rgba(255,255,255,0.05)] hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0_-4px_20px_-4px_rgba(255,255,255,0.15)] transition-all duration-200 shrink-0 group" 
-              title={item.title}
-            >
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 group-hover:opacity-100 pointer-events-none transition-opacity duration-200" />
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 group-hover:opacity-60 pointer-events-none transition-opacity duration-200" />
-              <item.icon className="relative z-10 w-[22px] h-[22px] transition-colors duration-200" />
-            </button>
-          ))}
+          ].map((item: { icon: any; title: string; href?: string }, i) => {
+            const Wrapper = item.href ? "a" : "button";
+            const props: any = {
+              key: i,
+              className: "relative overflow-hidden w-12 h-12 rounded-xl flex items-center justify-center text-white/50 hover:text-white bg-black/20 hover:bg-black/40 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_-4px_20px_-4px_rgba(255,255,255,0.05)] hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0_-4px_20px_-4px_rgba(255,255,255,0.15)] transition-all duration-200 shrink-0 group",
+              title: item.title,
+            };
+            if (item.title === "Image Engine") {
+              props.onClick = () => { setCollapsed(false); setActiveMode("image"); };
+            } else if (item.href) {
+              props.href = item.href;
+            } else {
+              props.onClick = () => setCollapsed(false);
+            }
+            return (
+              <Wrapper {...props}>
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 group-hover:opacity-100 pointer-events-none transition-opacity duration-200" />
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 group-hover:opacity-60 pointer-events-none transition-opacity duration-200" />
+                <item.icon className="relative z-10 w-[22px] h-[22px] transition-colors duration-200" />
+              </Wrapper>
+            );
+          })}
 
           {/* Bottom Profile / Settings */}
           <div className="mt-auto mb-6 flex flex-col gap-5 items-center shrink-0 w-full">
@@ -213,6 +255,21 @@ function Sidebar({
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-0 group-hover:opacity-30 pointer-events-none transition-opacity duration-200" />
               <Search className="relative z-10 w-[18px] h-[18px] text-white/30 group-hover:text-white/80 transition-colors duration-200" />
               <span className="relative z-10">Search</span>
+            </button>
+            <button
+              onClick={() => setActiveMode("image")}
+              className="relative overflow-hidden w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium text-white/90 hover:text-white transition-all duration-200 group mt-1"
+              style={{
+                background: "rgba(0,0,0,0.6)",
+                boxShadow: "0 8px 32px -8px rgba(0, 163, 255, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 -4px 20px -4px rgba(0, 163, 255, 0.3)",
+                backdropFilter: "blur(24px)",
+                fontFamily: SF
+              }}
+            >
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#00A3FF] to-transparent opacity-80 pointer-events-none" />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#00A3FF] blur-sm opacity-60 pointer-events-none" />
+              <Image className="relative z-10 w-[18px] h-[18px] text-[#00A3FF] group-hover:text-white transition-colors" />
+              <span className="relative z-10">Image Engine</span>
             </button>
           </div>
 
@@ -296,7 +353,7 @@ function Sidebar({
                   Knowledge Base
                 </span>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-medium text-white/30 tabular-nums" style={{ fontFamily: SF }}>{MOCK_KNOWLEDGE_BASE.length}</span>
+                  <span className="text-xs font-medium text-white/30 tabular-nums" style={{ fontFamily: SF }}>{documents.length}</span>
                   <ChevronDown className={`w-3.5 h-3.5 text-white/30 transition-transform duration-200 ${kbOpen ? "rotate-0" : "-rotate-90"}`} />
                 </div>
               </button>
@@ -312,24 +369,28 @@ function Sidebar({
                   <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 pointer-events-none" />
                   <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 pointer-events-none" />
                   <div className="space-y-0.5 relative z-10">
-                    {MOCK_KNOWLEDGE_BASE.map((file, i) => (
-                      <button
-                        key={file.id}
-                        className={`relative overflow-hidden w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 text-left group ${
-                          i === 0
-                            ? "text-white bg-black/40 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0_-4px_20px_-4px_rgba(255,255,255,0.12)]"
-                            : "text-white/50 hover:text-white hover:bg-black/40 hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_-4px_20px_-4px_rgba(255,255,255,0.08)]"
-                        }`}
-                      >
-                        <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent pointer-events-none transition-opacity duration-200 ${i === 0 ? 'opacity-70' : 'opacity-0 group-hover:opacity-70'}`} />
-                        <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm pointer-events-none transition-opacity duration-200 ${i === 0 ? 'opacity-30' : 'opacity-0 group-hover:opacity-30'}`} />
+                    {documents.length === 0 ? (
+                      <div className="px-3 py-2 text-xs text-white/30 italic text-center" style={{ fontFamily: SF }}>No documents uploaded</div>
+                    ) : (
+                      documents.map((doc: any, i: number) => (
+                        <button
+                          key={doc.filename}
+                          className={`relative overflow-hidden w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 text-left group ${
+                            i === 0
+                              ? "text-white bg-black/40 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0_-4px_20px_-4px_rgba(255,255,255,0.12)]"
+                              : "text-white/50 hover:text-white hover:bg-black/40 hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_-4px_20px_-4px_rgba(255,255,255,0.08)]"
+                          }`}
+                        >
+                          <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent pointer-events-none transition-opacity duration-200 ${i === 0 ? 'opacity-70' : 'opacity-0 group-hover:opacity-70'}`} />
+                          <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm pointer-events-none transition-opacity duration-200 ${i === 0 ? 'opacity-30' : 'opacity-0 group-hover:opacity-30'}`} />
 
-                        <FileText className={`relative z-10 w-[18px] h-[18px] shrink-0 transition-colors duration-200 ${i === 0 ? "text-white/80" : "text-white/30 group-hover:text-white/80"}`} />
-                        <span className="relative z-10 truncate text-[13px] font-medium" style={{ fontFamily: SF }}>
-                          {file.filename}
-                        </span>
-                      </button>
-                    ))}
+                          <FileText className={`relative z-10 w-[18px] h-[18px] shrink-0 transition-colors duration-200 ${i === 0 ? "text-white/80" : "text-white/30 group-hover:text-white/80"}`} />
+                          <span className="relative z-10 truncate text-[13px] font-medium" style={{ fontFamily: SF }} title={doc.filename}>
+                            {doc.filename}
+                          </span>
+                        </button>
+                      ))
+                    )}
                   </div>
                 </div>
               )}
@@ -348,44 +409,34 @@ function Sidebar({
               </button>
               {historyOpen && (
                 <div className="space-y-3 pb-1">
-                  {(["Today", "Yesterday", "Older"] as const).map((group) => {
-                    const items = MOCK_HISTORY.filter(h => h.date === group);
-                    if (!items.length) return null;
-                    return (
-                      <div key={group} className="space-y-1.5">
-                        <div className="px-2 text-[10px] font-semibold text-white/30 uppercase tracking-wider" style={{ fontFamily: SF }}>
-                          {group}
-                        </div>
-                        <div 
-                          className="relative overflow-hidden rounded-2xl p-1.5"
-                          style={{
-                            background: "rgba(0,0,0,0.6)",
-                            boxShadow: "0 8px 32px -8px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 -4px 20px -4px rgba(255, 255, 255, 0.12)",
-                            backdropFilter: "blur(24px)",
-                          }}
+                  <div 
+                    className="relative overflow-hidden rounded-2xl p-1.5"
+                    style={{
+                      background: "rgba(0,0,0,0.6)",
+                      boxShadow: "0 8px 32px -8px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 -4px 20px -4px rgba(255, 255, 255, 0.12)",
+                      backdropFilter: "blur(24px)",
+                    }}
+                  >
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 pointer-events-none" />
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 pointer-events-none" />
+                    
+                    <div className="space-y-0.5 relative z-10 pb-0.5">
+                      {historyList && historyList.filter(h => !searchQuery || h.title.toLowerCase().includes(searchQuery.toLowerCase())).map((h: any) => (
+                        <button
+                          key={h.session_id}
+                          onClick={() => onHistoryClick?.(h.session_id)}
+                          className="relative overflow-hidden w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-200 text-left group text-white/50 hover:text-white hover:bg-black/40 hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_-4px_20px_-4px_rgba(255,255,255,0.08)]"
+                          style={{ fontFamily: SF }}
                         >
-                          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 pointer-events-none" />
-                          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 pointer-events-none" />
+                          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-0 group-hover:opacity-70 pointer-events-none transition-opacity duration-200" />
+                          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-0 group-hover:opacity-30 pointer-events-none transition-opacity duration-200" />
                           
-                          <div className="space-y-0.5 relative z-10 pb-0.5">
-                            {items.map(h => (
-                              <button
-                                key={h.id}
-                                className="relative overflow-hidden w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-200 text-left group text-white/50 hover:text-white hover:bg-black/40 hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_-4px_20px_-4px_rgba(255,255,255,0.08)]"
-                                style={{ fontFamily: SF }}
-                              >
-                                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-0 group-hover:opacity-70 pointer-events-none transition-opacity duration-200" />
-                                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-0 group-hover:opacity-30 pointer-events-none transition-opacity duration-200" />
-                                
-                                <Clock className="relative z-10 w-[16px] h-[16px] shrink-0 text-white/30 group-hover:text-white/80 transition-colors duration-200" />
-                                <span className="relative z-10 truncate">{h.title}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                          <Clock className="relative z-10 w-[16px] h-[16px] shrink-0 text-white/30 group-hover:text-white/80 transition-colors duration-200" />
+                          <span className="relative z-10 truncate">{h.title}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -443,6 +494,26 @@ function Sidebar({
 // ─── TOPBAR ────────────────────────────────────────────────────────────────────
 function Topbar({ onToggleSidebar, sidebarCollapsed }: { onToggleSidebar: () => void; sidebarCollapsed: boolean }) {
   const [statsOpen, setStatsOpen] = useState(false);
+  const [wanKbs, setWanKbs] = useState<number>(0.0);
+
+  useEffect(() => {
+    const fetchTelemetry = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_AI_API_URL || "http://localhost:8000";
+        const res = await fetch(`${apiUrl}/api/v1/telemetry`);
+        const data = await res.json();
+        if (data.wan_ingress_kbs !== undefined) {
+          setWanKbs(data.wan_ingress_kbs);
+        }
+      } catch (err) {
+        // silently ignore fetch errors
+      }
+    };
+
+    fetchTelemetry();
+    const interval = setInterval(fetchTelemetry, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <header
@@ -468,7 +539,7 @@ function Topbar({ onToggleSidebar, sidebarCollapsed }: { onToggleSidebar: () => 
       {/* Desktop Stats */}
       <div className="hidden md:flex items-center gap-1.5">
         {[
-          { icon: Network, label: "WAN: 0 KB/s", warn: true },
+          { icon: Network, label: `WAN: ${wanKbs.toFixed(1)} KB/s`, warn: true },
           { icon: Cpu, label: "SLM: 3B" },
           { icon: Activity, label: "VRAM: 4 GB" },
         ].map(({ icon: Icon, label, warn }) => (
@@ -507,7 +578,7 @@ function Topbar({ onToggleSidebar, sidebarCollapsed }: { onToggleSidebar: () => 
         {statsOpen && (
           <div className="absolute top-full right-0 mt-3 p-2 rounded-xl bg-black/90 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl border border-white/5 min-w-[150px] flex flex-col gap-1.5 z-50">
             {[
-              { icon: Network, label: "WAN: 0 KB/s", warn: true },
+              { icon: Network, label: `WAN: ${wanKbs.toFixed(1)} KB/s`, warn: true },
               { icon: Cpu, label: "SLM: 3B" },
               { icon: Activity, label: "VRAM: 4 GB" },
             ].map(({ icon: Icon, label, warn }) => (
@@ -708,13 +779,55 @@ function ChatMessage({ message, isLast }: { message: ChatMessageData; isLast?: b
 
       {/* Content */}
       <div className="pl-[36px] max-w-[88%]">
-        <div className="relative overflow-hidden p-4 rounded-[16px] rounded-bl-sm bg-black/60 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] backdrop-blur-xl">
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 pointer-events-none" />
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 pointer-events-none" />
-          <p className="text-[14px] text-white/80 leading-[1.8] tracking-[-0.003em] relative z-10" style={{ fontFamily: SF }}>
-            {message.content}
-          </p>
-        </div>
+        
+        {/* Render Steps */}
+        {message.steps && message.steps.length > 0 && (
+          <div className="mb-4 space-y-2">
+            {message.steps.map((step, idx) => (
+              <div key={idx} className="flex flex-col gap-1 p-3 rounded-xl bg-black/40 border border-white/5">
+                <div className="flex items-center gap-2">
+                  {step.status === "in_progress" ? (
+                    <span className="w-3.5 h-3.5 rounded-full border-2 border-white/20 border-t-[#00A3FF] animate-spin" />
+                  ) : step.status === "completed" ? (
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                  ) : (
+                    <RotateCcw className="w-3.5 h-3.5 text-[#A1A1AA]" />
+                  )}
+                  <span className="text-[12px] font-semibold text-white/90 font-mono tracking-tight">
+                    {step.title}
+                  </span>
+                </div>
+                {step.details && (
+                  <p className="text-[11px] text-white/50 pl-5 leading-snug">{step.details}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Final Summary */}
+        {message.content && (
+          <div className="relative overflow-hidden p-4 rounded-[16px] rounded-bl-sm bg-black/60 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] backdrop-blur-xl">
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 pointer-events-none" />
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 pointer-events-none" />
+            <p className="text-[14px] text-white/80 leading-[1.8] tracking-[-0.003em] relative z-10 whitespace-pre-wrap" style={{ fontFamily: SF }}>
+              {message.content}
+            </p>
+          </div>
+        )}
+
+        {/* Deliverables */}
+        {message.steps && message.steps.find(s => s.deliverables) && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {message.steps.find(s => s.deliverables)?.deliverables?.map((d, i) => (
+              <a key={i} href={`http://localhost:8000/api/v1/download/${d}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/40 border border-[#00A3FF]/30 hover:bg-[#00A3FF]/10 hover:border-[#00A3FF]/60 transition-colors">
+                <FileText className="w-3.5 h-3.5 text-[#00A3FF]" />
+                <span className="text-[11px] font-mono text-white/80">{d}</span>
+                <Download className="w-3 h-3 text-white/40 ml-1" />
+              </a>
+            ))}
+          </div>
+        )}
         <div className={`flex items-center gap-0.5 mt-4 transition-opacity duration-200 ${showActions || isLast || feedback !== null || copied || isRegenerating ? "opacity-100" : "opacity-0"}`}>
           <button 
             title="Copy" 
@@ -777,7 +890,7 @@ function Artifacts({ show }: { show: boolean }) {
           </span>
         </div>
         <div className="p-3 grid grid-cols-3 gap-2 relative z-10">
-          {MOCK_ARTIFACTS.map(artifact => (
+          {([] as any[]).map(artifact => (
             <div
               key={artifact.id}
               className="group flex flex-col gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200"
@@ -866,7 +979,7 @@ function EmptyState({ onAction }: { onAction: (q: string) => void }) {
         {[
           "Air-Gapped Active",
           "Local Inference Ready",
-          `${MOCK_KNOWLEDGE_BASE.length} Documents Indexed`
+          "0 Documents Indexed"
         ].map((label) => (
           <div key={label} className="es-status-item relative overflow-hidden px-4 py-1.5 rounded-full flex items-center justify-center bg-black/60 backdrop-blur-xl shadow-[0_8px_32px_-8px_rgba(255,255,255,0.08),inset_0_0_0_1px_rgba(255,255,255,0.08),inset_0_-4px_20px_-4px_rgba(255,255,255,0.12)] text-white/50">
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 pointer-events-none" />
@@ -1016,10 +1129,173 @@ function Composer({ onExecute, isExecuting }: { onExecute: (q: string, files: Fi
   );
 }
 
+// ─── IMAGE GEN STATE ────────────────────────────────────────────────────────────
+function ImageGenState({ payload, setPayload, isGenerating, generatedImage, onGenerate, showRatios, setShowRatios }: any) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline();
+      gsap.fromTo(ref.current, { opacity: 0 }, { opacity: 1, duration: 1.0 });
+      tl.fromTo(".ig-logo", { y: -30, opacity: 0, scale: 0.9 }, { y: 0, opacity: 1, scale: 1, duration: 1.5, ease: "power3.out" }, 0.3)
+        .fromTo(".ig-title", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 1.2, ease: "power3.out" }, "-=0.7")
+        .fromTo(".ig-desc", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 1.2, ease: "power3.out" }, "-=0.9")
+        .fromTo(".ig-panel", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 1.2, ease: "power3.out" }, "-=0.7");
+    }, ref);
+    return () => ctx.revert();
+  }, [generatedImage, isGenerating]); // Re-run animation if image state changes
+
+  const RATIOS = ["1:1", "16:9", "9:16", "3:2", "4:3"];
+  const STYLES = ["Photorealistic", "Technical Schematic", "Isometric", "Cyberpunk"];
+
+  return (
+    <div ref={ref} className="flex-1 min-h-full flex flex-col items-center justify-center px-6 gap-6 py-12">
+      
+      {generatedImage ? (
+        <div className="ig-panel w-full max-w-[512px] mx-auto rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_30px_rgba(0,163,255,0.15)] mb-2 bg-black/40 backdrop-blur-xl flex items-center justify-center min-h-[300px]">
+          <img src={generatedImage} alt="Generated Asset" className="w-full h-auto object-contain" />
+        </div>
+      ) : isGenerating ? (
+        <div className="ig-panel w-full max-w-[512px] mx-auto rounded-2xl border border-white/10 shadow-[0_0_30px_rgba(0,163,255,0.15)] mb-2 bg-black/40 backdrop-blur-xl flex flex-col items-center justify-center min-h-[300px] gap-6">
+           <div className="w-12 h-12 rounded-full border-t-2 border-b-2 border-l-2 border-transparent border-t-[#00A3FF] border-b-[#00A3FF] animate-[spin_1.5s_linear_infinite]" />
+           <p className="text-[#00A3FF] animate-pulse text-sm font-mono tracking-widest uppercase">Synthesizing Asset...</p>
+        </div>
+      ) : (
+        <div className="text-center max-w-lg mb-4">
+          <div className="ig-logo relative w-16 h-16 mx-auto mb-6 flex justify-center items-center">
+            <div className="absolute inset-0 rounded-full blur-2xl" style={{ background: "rgba(0,163,255,0.2)" }} />
+            <div className="relative z-10 w-16 h-16 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 flex items-center justify-center shadow-[inset_0_0_20px_rgba(0,163,255,0.2)]">
+              <Image className="w-8 h-8 text-[#00A3FF]" />
+            </div>
+          </div>
+          <h1 className="ig-title text-[30px] font-semibold tracking-[-0.03em] leading-tight mb-3 text-transparent bg-clip-text bg-gradient-to-b from-white/60 to-white/20" style={{ fontFamily: SF }}>
+            Create images
+          </h1>
+          <p className="ig-desc text-[15px] text-white/40 leading-relaxed" style={{ fontFamily: SF }}>
+            Create with SovereignX Image Engine (Local GPU)
+          </p>
+        </div>
+      )}
+
+      <div className="ig-panel w-full max-w-[700px] bg-black/40 backdrop-blur-xl border border-white/10 rounded-[16px] p-4 flex flex-col shadow-[0_8px_32px_-8px_rgba(0,163,255,0.1),inset_0_0_0_1px_rgba(255,255,255,0.05)] transition-all focus-within:border-[#00A3FF]/40 focus-within:shadow-[0_8px_32px_-8px_rgba(0,163,255,0.2),inset_0_0_0_1px_rgba(0,163,255,0.2)]">
+        <textarea
+          value={payload.prompt}
+          onChange={(e) => setPayload({ ...payload, prompt: e.target.value })}
+          placeholder="Ask SovereignX to generate an image..."
+          className="w-full bg-transparent text-white/90 placeholder:text-white/30 text-[14px] resize-none outline-none min-h-[80px] p-2 leading-relaxed"
+          style={{ fontFamily: SF, caretColor: "#00A3FF" }}
+        />
+        
+        <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10 relative">
+          <div className="relative">
+            <button 
+              onClick={() => setShowRatios(!showRatios)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-white/10 text-sm text-white/70 hover:border-white/30 transition-colors"
+            >
+              {payload.ratio} <ChevronDown className="w-3 h-3 text-white/50" />
+            </button>
+            {showRatios && (
+              <div className="absolute bottom-full mb-2 left-0 w-24 bg-black/90 border border-white/10 rounded-lg overflow-hidden z-50 backdrop-blur-xl">
+                {RATIOS.map(r => (
+                  <button 
+                    key={r}
+                    onClick={() => { setPayload({ ...payload, ratio: r }); setShowRatios(false); }}
+                    className="w-full text-left px-3 py-2 text-sm text-white/70 hover:bg-white/10 transition-colors"
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={onGenerate}
+            disabled={!payload.prompt || isGenerating}
+            className="flex items-center gap-2 px-6 py-2 rounded-lg bg-[#00A3FF] hover:bg-[#00A3FF]/80 text-black font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(0,163,255,0.4)]"
+          >
+            {isGenerating ? "Generating..." : "Generate"}
+            {!isGenerating && <Sparkles className="w-4 h-4" />}
+          </button>
+        </div>
+      </div>
+
+      <div className="ig-panel w-full max-w-[700px] mt-2 flex flex-col gap-3">
+        <span className="text-xs font-mono text-white/40 uppercase tracking-wider ml-1">Style Presets</span>
+        <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
+          {STYLES.map(style => {
+            const isActive = payload.style === style;
+            return (
+              <button
+                key={style}
+                onClick={() => setPayload({ ...payload, style: isActive ? "" : style })}
+                className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all border ${
+                  isActive 
+                    ? "bg-[#00A3FF]/10 text-[#00A3FF] border-[#00A3FF]/50 shadow-[0_0_15px_rgba(0,163,255,0.2)]" 
+                    : "bg-black/40 text-white/60 border-white/10 hover:border-white/30 hover:text-white/90"
+                }`}
+              >
+                {style}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN WORKSPACE ────────────────────────────────────────────────────────────
 export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [activeMode, setActiveMode] = useState<"chat" | "image">("chat");
+  const [imgPrompt, setImgPrompt] = useState("");
+  const [imgRatio, setImgRatio] = useState("1:1");
+  const [imgStyle, setImgStyle] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [showRatios, setShowRatios] = useState(false);
   const [messages, setMessages] = useState<ChatMessageData[]>([]);
+  const [sessionId, setSessionId] = useState<string>(() => "sess_" + Date.now().toString());
+  const [historyList, setHistoryList] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_AI_API_URL || "http://localhost:8000"}/api/v1/history`);
+        if (res.ok) {
+          const data = await res.json();
+          setHistoryList(data);
+        }
+      } catch (e) {
+        console.error("Failed to fetch history:", e);
+      }
+    };
+    fetchHistory();
+  }, [messages.length]); // refetch when messages change (new chat saved)
+
+  const handleGenerateImage = async () => {
+    if (!imgPrompt) return;
+    setIsGenerating(true);
+    setGeneratedImage(null);
+    try {
+      const finalPrompt = imgStyle ? `${imgPrompt}, ${imgStyle} style` : imgPrompt;
+      const res = await fetch(`${process.env.NEXT_PUBLIC_AI_API_URL || "http://localhost:8000"}/api/v1/generate-image`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: finalPrompt, num_inference_steps: 20 })
+      });
+      const data = await res.json();
+      if (data.success && data.filepath_url) {
+        setGeneratedImage(`${process.env.NEXT_PUBLIC_AI_API_URL || "http://localhost:8000"}${data.filepath_url}`);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
   const [execStatus, setExecStatus] = useState<ExecutionStatus>("idle");
   const [showArtifacts, setShowArtifacts] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -1041,7 +1317,30 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
 
   useEffect(() => { scrollToBottom(); }, [messages, execStatus, scrollToBottom]);
 
+      const handleHistoryClick = useCallback(async (id: string) => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_AI_API_URL || "http://localhost:8000";
+      const res = await fetch(apiUrl + "/api/v1/history/" + id);
+      if (res.ok) {
+        const data = await res.json();
+        setSessionId(id);
+        const mappedMsgs = data.messages.map((m: any, i: number) => ({
+          id: "h-" + id + "-" + i,
+          role: m.role,
+          content: m.content
+        }));
+        setMessages(mappedMsgs);
+        setActiveMode("chat");
+        setExecStatus("completed");
+      }
+    } catch (e) {
+      console.error("Failed to load history session:", e);
+    }
+  }, []);
+
   const handleNewExecution = useCallback(() => {
+    setActiveMode("chat");
+    setSessionId("sess_" + Date.now().toString());
     setMessages([]); setExecStatus("idle"); setShowArtifacts(false);
   }, []);
 
@@ -1057,21 +1356,94 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
     setMessages(prev => [...prev, userMsg]);
     setShowArtifacts(false);
 
-    const pipeline: ExecutionStatus[] = ["classifying", "executing", "retrieving", "synthesizing"];
-    for (const step of pipeline) {
-      setExecStatus(step);
-      await new Promise(r => setTimeout(r, STEP_TIMING_MS[step] ?? 1500));
-    }
-    setExecStatus("completed");
-
+    const aiMsgId = `a-${Date.now()}`;
     const aiMsg: ChatMessageData = {
-      id: `a-${Date.now()}`, role: "assistant",
-      content: `Analysis complete. I've processed your query "${query}" using the sovereign knowledge base. The local inference model identified 3 compliance vectors and 2 architectural anomalies across your indexed corpus. Three governed artifacts have been generated for your review. All computation was performed within the air-gapped environment — zero external network calls were made.`,
+      id: aiMsgId, role: "assistant",
+      content: "",
       timestamp: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
       metadata: { model: "llama-3-8b-instruct", rag: true, governed: true },
     };
     setMessages(prev => [...prev, aiMsg]);
-    setShowArtifacts(true);
+    setExecStatus("executing");
+
+    const apiUrl = process.env.NEXT_PUBLIC_AI_API_URL || "http://localhost:8000";
+
+    try {
+      const response = await fetch(`${apiUrl}/api/v1/agent-stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: query, session_id: sessionId }),
+      });
+
+      if (response.status === 400) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorText = errorData.error || "System Warning: Query blocked for safety.";
+        setMessages(prev => prev.map(m => m.id === aiMsgId ? { ...m, content: errorText } : m));
+        setExecStatus("error");
+        return;
+      }
+
+      if (!response.body) throw new Error("No response body");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let done = false;
+      let buffer = "";
+
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        if (value) {
+          buffer += decoder.decode(value, { stream: true });
+          let newlineIndex;
+          while ((newlineIndex = buffer.indexOf("\n")) >= 0) {
+            const line = buffer.slice(0, newlineIndex);
+            buffer = buffer.slice(newlineIndex + 1);
+            if (line.startsWith("data:")) {
+              let dataText = line.substring(5);
+              if (dataText.startsWith(" ")) dataText = dataText.substring(1);
+              if (dataText.trim() === "[DONE]") {
+                done = true;
+                break;
+              }
+              try {
+                const parsed = JSON.parse(dataText);
+                setMessages(prev => prev.map(m => {
+                  if (m.id === aiMsgId) {
+                    const currentSteps = m.steps || [];
+                    const newSteps = [...currentSteps];
+                    
+                    if (parsed.step !== undefined) {
+                      const stepIndex = newSteps.findIndex(s => s.step === parsed.step);
+                      if (stepIndex >= 0) {
+                        newSteps[stepIndex] = { ...newSteps[stepIndex], ...parsed };
+                      } else {
+                        newSteps.push(parsed);
+                      }
+                    }
+                    
+                    let newContent = m.content;
+                    if (parsed.final_summary) {
+                      newContent = parsed.final_summary;
+                    }
+
+                    return { ...m, steps: newSteps, content: newContent };
+                  }
+                  return m;
+                }));
+              } catch (e) {
+                console.warn("Could not parse SSE data:", dataText);
+              }
+            }
+          }
+        }
+      }
+      setExecStatus("completed");
+    } catch (err) {
+      console.error(err);
+      setMessages(prev => prev.map(m => m.id === aiMsgId ? { ...m, content: "Error connecting to AI Backend." } : m));
+      setExecStatus("error");
+    }
     setTimeout(() => setExecStatus("idle"), 600);
   }, [execStatus]);
 
@@ -1118,12 +1490,18 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
         />
       )}
 
-      <Sidebar
+            <Sidebar
         collapsed={sidebarCollapsed}
         setCollapsed={setSidebarCollapsed}
         user={user}
         onLogout={onLogout}
         onNewExecution={handleNewExecution}
+        activeMode={activeMode}
+        setActiveMode={setActiveMode}
+        historyList={historyList}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        onHistoryClick={handleHistoryClick}
       />
 
       {/* Main — does NOT scroll, it's a fixed layout */}
@@ -1134,7 +1512,19 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
 
         {/* Chat area — also does NOT overflow-scroll, only the message list does */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {messages.length === 0 ? (
+          {activeMode === "image" ? (
+            <div data-lenis-prevent="true" className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.08) transparent" }}>
+              <ImageGenState 
+                payload={{ prompt: imgPrompt, ratio: imgRatio, style: imgStyle }}
+                setPayload={(p: any) => { setImgPrompt(p.prompt); setImgRatio(p.ratio); setImgStyle(p.style); }}
+                isGenerating={isGenerating}
+                generatedImage={generatedImage}
+                onGenerate={handleGenerateImage}
+                showRatios={showRatios}
+                setShowRatios={setShowRatios}
+              />
+            </div>
+          ) : messages.length === 0 ? (
             <div data-lenis-prevent="true" className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.08) transparent" }}>
               <EmptyState onAction={q => handleExecute(q, [])} />
             </div>
@@ -1154,8 +1544,14 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
           )}
         </div>
 
-        <Composer onExecute={handleExecute} isExecuting={isExecuting} />
+        {activeMode === "chat" && <Composer onExecute={handleExecute} isExecuting={isExecuting} />}
       </div>
     </div>
   );
 }
+
+
+
+
+
+
