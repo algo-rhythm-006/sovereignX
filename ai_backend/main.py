@@ -117,6 +117,7 @@ class TaskRequest(BaseModel):
     scenario_preset:   Optional[str] = None
     active_filename:   Optional[str] = None
     session_id:        Optional[str] = None
+    image_data:        Optional[str] = None
 
     def resolved_prompt(self) -> str:
         """Returns whichever of prompt/query is non-empty, or empty string."""
@@ -556,14 +557,15 @@ async def agent_stream(req: TaskRequest):
             )
 
         # ── Tier 2: Build user-facing prompt (clean — no context repetition) ──
-        base64_img = None
+        base64_img = req.image_data
+        logger.info(f"Received request with image_data present: {bool(base64_img)}")
         if intent_category == "vision_pid":
             model_prompt = (
                 f"User Prompt: {prompt}\n"
                 f"Target Image File: {active_filename or 'scanned_inspection.png'}\n"
                 f"Please analyze this visual asset and answer the prompt accurately."
             )
-            if active_filename:
+            if not base64_img and active_filename:
                 from collaborative_graph import encode_image_to_base64
                 base64_img = encode_image_to_base64(os.path.join(KB_DIR, active_filename))
         elif intent_category in ["GENERAL_CODE_GEN", "diagram_gen"]:
@@ -572,23 +574,24 @@ async def agent_stream(req: TaskRequest):
             model_prompt = prompt   # context is already in sys_prompt above
 
         # ── Tier 2: Heavy LLM inference — only fires after all Tier 1 gates ──
-        ollama_res = await ollama_client.generate_response(
-            model=target_model,
-            prompt=model_prompt,
-            system_prompt=sys_prompt,
-            images=[base64_img] if base64_img else None,
-            fallback_model=model_meta.get("fallback"),
-            history_messages=chat_history
-        )
+        kwargs = {
+            "model": target_model,
+            "prompt": model_prompt,
+            "system_prompt": sys_prompt,
+            "images": [base64_img] if base64_img else None,
+            "history_messages": chat_history
+        }
+        if intent_category != "vision_pid":
+            kwargs["fallback_model"] = model_meta.get("fallback")
+
+        ollama_res = await ollama_client.generate_response(**kwargs)
 
         answer_text = ollama_res.get("response", "").strip()
         if ollama_res.get("simulated", False):
             if intent_category == "vision_pid":
-                answer_text = (
-                    f"Visual Analysis (qwen2.5vl:3b) of image file '{active_filename or 'scanned_image.png'}':\n\n"
-                    f"Prompt: '{prompt}'\n\n"
-                    f"Visual Inspection Summary: Image features extracted successfully. Visual parameters and structural layout align with quality inspection standards."
-                )
+                err_msg = f"Vision model failed: {ollama_res.get('response', 'Unknown error')}"
+                yield f"data: {json.dumps({'step': 99, 'status': 'error', 'title': 'Vision Processing Failed', 'details': err_msg})}\n\n"
+                return
             elif intent_category == "GENERAL_CODE_GEN":
                 answer_text = (
                     "```java\n"
@@ -638,14 +641,19 @@ async def agent_stream(req: TaskRequest):
             yield f"data: {json.dumps(p_node1)}\n\n"
             await asyncio.sleep(0.7)
 
-            state = await vision_agent_node({
-                "user_prompt": prompt,
-                "image_path": image_path,
-                "extracted_vision_text": "",
-                "enclave_execution_result": {},
-                "final_deliverable_path": "",
-                "step_logs": []
-            })
+            try:
+                state = await vision_agent_node({
+                    "user_prompt": prompt,
+                    "image_path": image_path,
+                    "image_data": req.image_data,
+                    "extracted_vision_text": "",
+                    "enclave_execution_result": {},
+                    "final_deliverable_path": "",
+                    "step_logs": []
+                })
+            except Exception as e:
+                yield f"data: {json.dumps({'step': 99, 'status': 'error', 'title': 'Vision Agent Error', 'details': str(e)})}\n\n"
+                return
 
             tool_output_v = {
                 "tool_type": "vision_analysis",
@@ -678,7 +686,11 @@ async def agent_stream(req: TaskRequest):
             yield f"data: {json.dumps(p_node2)}\n\n"
             await asyncio.sleep(0.8)
 
-            state = await engineering_agent_node(state)
+            try:
+                state = await engineering_agent_node(state)
+            except Exception as e:
+                yield f"data: {json.dumps({'step': 99, 'status': 'error', 'title': 'Engineering Agent Error', 'details': str(e)})}\n\n"
+                return
             exec_res = state["enclave_execution_result"]
 
             # ── Self-Healing SSE event (Step 4.1) — emitted before completion card ──
@@ -727,7 +739,11 @@ async def agent_stream(req: TaskRequest):
             yield f"data: {json.dumps(p_node3)}\n\n"
             await asyncio.sleep(0.8)
 
-            state = await reporting_agent_node(state)
+            try:
+                state = await reporting_agent_node(state)
+            except Exception as e:
+                yield f"data: {json.dumps({'step': 99, 'status': 'error', 'title': 'Reporting Agent Error', 'details': str(e)})}\n\n"
+                return
             docx_name = os.path.basename(state["final_deliverable_path"])
 
             final_summary = (
@@ -1088,4 +1104,19 @@ async def auto_name_session(prompt: str, session_id: str):
             history_db.update_session_title(session_id, title)
     except Exception as e:
         logger.error(f"Failed to auto-name session {session_id}: {e}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

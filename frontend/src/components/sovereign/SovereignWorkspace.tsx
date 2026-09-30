@@ -1344,19 +1344,33 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
     setMessages([]); setExecStatus("idle"); setShowArtifacts(false);
   }, []);
 
-  const handleExecute = useCallback(async (query: string, files: File[]) => {
+    const handleExecute = useCallback(async (query: string, files: File[]) => {
     if (!["idle", "completed", "error"].includes(execStatus)) return;
 
+    let base64Image = undefined;
+    let activeFilename = undefined;
+    if (files.length > 0) {
+      const file = files[0];
+      activeFilename = file.name;
+      if (file.type.startsWith("image/")) {
+        base64Image = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.readAsDataURL(file);
+        });
+      }
+    }
+
     const userMsg: ChatMessageData = {
-      id: `u-${Date.now()}`, role: "user",
-      content: query || `Uploading ${files.length} file(s)`,
+      id: "u-" + Date.now(), role: "user",
+      content: query || "Uploading " + files.length + " file(s)",
       timestamp: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-      attachments: files.map((f, i) => ({ id: `a${i}`, name: f.name, type: f.type })),
+      attachments: files.map((f, i) => ({ id: "a" + i, name: f.name, type: f.type })),
     };
     setMessages(prev => [...prev, userMsg]);
     setShowArtifacts(false);
 
-    const aiMsgId = `a-${Date.now()}`;
+    const aiMsgId = "a-" + Date.now();
     const aiMsg: ChatMessageData = {
       id: aiMsgId, role: "assistant",
       content: "",
@@ -1369,10 +1383,15 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
     const apiUrl = process.env.NEXT_PUBLIC_AI_API_URL || "http://localhost:8000";
 
     try {
-      const response = await fetch(`${apiUrl}/api/v1/agent-stream`, {
+      const response = await fetch(apiUrl + "/api/v1/agent-stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: query, session_id: sessionId }),
+        body: JSON.stringify({ 
+            prompt: query, 
+            session_id: sessionId,
+            active_filename: activeFilename,
+            image_data: base64Image
+        }),
       });
 
       if (response.status === 400) {
@@ -1549,6 +1568,7 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
     </div>
   );
 }
+
 
 
 

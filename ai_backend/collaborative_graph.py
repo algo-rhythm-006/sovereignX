@@ -97,6 +97,7 @@ def extract_robust_metric(text: str, metric_keys: List[str], default_val: float)
 class WorkflowState(TypedDict):
     user_prompt: str
     image_path: Optional[str]
+    image_data: Optional[str]
     extracted_vision_text: str
     enclave_execution_result: Dict[str, Any]
     final_deliverable_path: str
@@ -119,8 +120,11 @@ async def vision_agent_node(state: WorkflowState) -> WorkflowState:
     prompt = state.get("user_prompt") or "Analyze image metrics"
     logger.info(f"[Node 1: Vision Agent - qwen2.5vl:3b] Processing image: {image_file}")
 
-    # Encode image to Base64
-    base64_str = encode_image_to_base64(image_file)
+    # Get image data from state, or encode it if missing
+    base64_str = state.get("image_data")
+    if not base64_str:
+        base64_str = encode_image_to_base64(image_file)
+        state["image_data"] = base64_str
 
     ollama_client = OllamaClient()
     v_prompt = (
@@ -140,7 +144,6 @@ async def vision_agent_node(state: WorkflowState) -> WorkflowState:
         prompt=v_prompt,
         system_prompt=v_sys_prompt,
         images=[base64_str] if base64_str else None,
-        fallback_model="llama3.2:3b",
         keep_alive=0
     )
     await ollama_client.close()
@@ -148,13 +151,7 @@ async def vision_agent_node(state: WorkflowState) -> WorkflowState:
 
     extracted_text = ollama_res.get("response", "")
     if not extracted_text or ollama_res.get("simulated", False):
-        extracted_text = (
-            f"Visual Inspection Analysis (qwen2.5vl:3b) of asset '{os.path.basename(image_file)}':\n"
-            f"- Target Visual Asset: {os.path.basename(image_file)}\n"
-            f"- Extracted Visual Features: Key visual markers, layout boundaries, and structural elements verified.\n"
-            f"- Document / Image Type: High-resolution visual inspection file\n"
-            f"- Quality & Integrity Check: PASS"
-        )
+        raise ValueError(f"Vision model qwen2.5vl:3b failed to process the image: {ollama_res.get('response', 'Unknown error')}")
 
     state["extracted_vision_text"] = extracted_text
     state["step_logs"].append({
@@ -461,3 +458,5 @@ class CollaborativeLangGraphPipeline:
             state = await node_func(state)
 
         return state
+
+

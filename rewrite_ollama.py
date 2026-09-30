@@ -1,35 +1,12 @@
-import httpx
-import json
-import logging
-from typing import AsyncGenerator, Dict, Any, Optional, List
+import re
 
-logger = logging.getLogger("sovereign_workbench.ollama_client")
+file_path = r'C:\sovereignX\ai_backend\ollama_client.py'
+with open(file_path, 'r') as f:
+    content = f.read()
 
-class OllamaClient:
-    def __init__(self, base_url: str = "http://localhost:11434"):
-        self.base_url = base_url.rstrip("/")
-        self.client = httpx.AsyncClient(timeout=60.0)
+pattern = re.compile(r'    async def generate_response\(.*?(?=    async def close|\Z)', re.DOTALL)
 
-    async def check_health(self) -> bool:
-        """Check if local Ollama service is reachable."""
-        try:
-            res = await self.client.get(f"{self.base_url}/api/tags")
-            return res.status_code == 200
-        except Exception:
-            return False
-
-    async def list_available_models(self) -> list[str]:
-        """List currently downloaded models in Ollama."""
-        try:
-            res = await self.client.get(f"{self.base_url}/api/tags")
-            if res.status_code == 200:
-                data = res.json()
-                return [m["name"] for m in data.get("models", [])]
-        except Exception as e:
-            logger.warning(f"Could not reach Ollama: {e}")
-        return []
-
-    async def generate_response(
+new_func = '''    async def generate_response(
         self,
         model: str,
         prompt: str,
@@ -99,7 +76,8 @@ class OllamaClient:
             "simulated": True
         }
 
-    async def close(self):
-        await self.client.aclose()
+'''
 
-
+content = pattern.sub(new_func, content)
+with open(file_path, 'w') as f:
+    f.write(content)
