@@ -61,16 +61,6 @@ class DynamicModelRouter:
             meta = self.config["models"]["vision_pid"]
             return "vision_pid", meta["name"], meta
 
-        # 3. Explicit numerical calculation check
-        eng_calc_keywords = [
-            "calculate", "run calculation", "solve formula", "math expression",
-            "numerical computation", "data analysis calculation", "perform calculation",
-            "compute matrix", "statistical calculation", "evaluate formula"
-        ]
-        if any(kw in prompt_lower for kw in eng_calc_keywords):
-            meta = self.config["models"]["code_math"]
-            return "code_math", meta["name"], meta
-
         # 4. GENERAL_CODE_GEN check (writing/generating code in Java, C++, Python, JavaScript, etc.)
         general_code_patterns = [
             "write java", "java code", "write a java", "implement in c++", "c++ code",
@@ -87,6 +77,16 @@ class DynamicModelRouter:
             logger.info(f"Classified prompt as GENERAL_CODE_GEN -> routing directly to qwen2.5-coder:7b")
             meta = self.config["models"]["code_math"]
             return "GENERAL_CODE_GEN", meta["name"], meta
+
+        # 3. Explicit numerical calculation check
+        eng_calc_keywords = [
+            "calculate", "run calculation", "solve formula", "math expression",
+            "numerical computation", "data analysis calculation", "perform calculation",
+            "compute matrix", "statistical calculation", "evaluate formula"
+        ]
+        if any(kw in prompt_lower for kw in eng_calc_keywords):
+            meta = self.config["models"]["code_math"]
+            return "code_math", meta["name"], meta
 
         # 5. Diagram / architecture generation check (before generic vision fallback)
         diagram_keywords = [
@@ -156,3 +156,4 @@ class DynamicModelRouter:
             "max_vram": self.config.get("max_vram_gb", 4.0),
             "configured_models": list(self.config.get("models", {}).keys())
         }
+
