@@ -1035,12 +1035,22 @@ async def agent_stream(req: TaskRequest):
             yield f"data: {json.dumps(p4)}\n\n"
             await asyncio.sleep(0.8)
 
+                        stdout_log = calc_result.get('tee_stdout', '')
+            error_log = calc_result.get('error', '')
+            
+            output_snippet = ""
+            if stdout_log:
+                output_snippet += f"\n\n**Standard Output:**\n```\n{stdout_log}\n```"
+            if error_log:
+                output_snippet += f"\n\n**Standard Error:**\n```\n{error_log}\n```"
+
             summary_text = (
                 f"When using the Secure Enclave Executor to run code, the agent generated the following script:\n\n"
                 f"```python\n{executed_code_block}\n```\n\n"
                 f"### Secure Enclave Execution Output:\n"
                 f"Verification script executed successfully for user prompt: '{prompt}'. "
                 f"Overall Integrity Status: {status_str}."
+                f"{output_snippet}"
             )
 
             docx_path = synthesizer.generate_docx_memo(
