@@ -1358,7 +1358,20 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
           reader.onload = (e) => resolve(e.target?.result as string);
           reader.readAsDataURL(file);
         });
-      }
+      } else {
+          try {
+            const apiUrl = process.env.NEXT_PUBLIC_AI_API_URL || "http://localhost:8000";
+            const formData = new FormData();
+            formData.append("file", file);
+            await fetch(apiUrl + "/api/v1/upload-document", {
+              method: "POST",
+              body: formData
+            });
+            window.dispatchEvent(new Event("refetchKnowledgeBase"));
+          } catch (e) {
+            console.error("Upload error:", e);
+          }
+        }
     }
 
     const userMsg: ChatMessageData = {
@@ -1568,6 +1581,7 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
     </div>
   );
 }
+
 
 
 
