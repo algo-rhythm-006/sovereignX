@@ -975,6 +975,27 @@ function ChatMessage({ message, isLast }: { message: ChatMessageData; isLast?: b
                 {step.details && (
                   <p className="text-[11px] text-white/50 pl-5 leading-snug">{step.details}</p>
                 )}
+                  {step.needs_approval && (
+                    <div className="pl-5 pt-2 pb-1">
+                      <button 
+                        onClick={async () => {
+                          try {
+                            const apiUrl = process.env.NEXT_PUBLIC_AI_API_URL || "http://localhost:8000";
+                            await fetch(apiUrl + "/api/v1/approve-execution", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ execution_id: step.execution_id })
+                            });
+                          } catch (e) {
+                            console.error(e);
+                          }
+                        }}
+                        className="px-3 py-1.5 rounded bg-[#00A3FF]/20 border border-[#00A3FF]/50 text-[#00A3FF] text-[11px] font-mono hover:bg-[#00A3FF]/30 transition-colors"
+                      >
+                        Authorize Execution
+                      </button>
+                    </div>
+                  )}
               </div>
             ))}
           </div>

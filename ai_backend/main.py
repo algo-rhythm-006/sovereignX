@@ -571,6 +571,32 @@ async def agent_stream(req: TaskRequest):
                 base64_img = encode_image_to_base64(os.path.join(KB_DIR, active_filename))
         elif intent_category in ["GENERAL_CODE_GEN", "diagram_gen"]:
             model_prompt = prompt   # no context injection for code/diagram tasks
+        elif intent_category == "code_math":
+            if active_filename:
+                file_path_raw = os.path.join(KB_DIR, active_filename)
+                file_path = file_path_raw.replace("\\", "\\\\")
+                preview = ""
+                try:
+                    import pandas as pd
+                    if active_filename.endswith(".csv"):
+                        df_preview = pd.read_csv(file_path_raw, nrows=3)
+                        preview = f"\n\nExact Pandas Columns: {list(df_preview.columns)}\nData Preview:\n{df_preview.to_markdown()}"
+                    elif active_filename.endswith((".xls", ".xlsx")):
+                        df_preview = pd.read_excel(file_path_raw, nrows=3)
+                        preview = f"\n\nExact Pandas Columns: {list(df_preview.columns)}\nData Preview:\n{df_preview.to_markdown()}"
+                    elif active_filename.endswith(".pdf"):
+                        import pdfplumber
+                        with pdfplumber.open(file_path_raw) as pdf:
+                            tbl = pdf.pages[0].extract_table()
+                            if tbl and len(tbl) > 1:
+                                df_preview = pd.DataFrame(tbl[1:4], columns=tbl[0])
+                                preview = f"\n\nExact PDF Table Columns: {list(df_preview.columns)}\nData Preview:\n{df_preview.to_markdown()}"
+
+                except Exception as e:
+                    pass
+                model_prompt = f"User Prompt: {prompt}\n\nData Source File: '{file_path}'{preview}\n\nWrite a Python script to analyze this data file. You must output the raw python script wrapped in ```python ... ``` tags. Load the file using pandas. If it is a PDF, MUST use this exact code to load it into pandas: import pdfplumber, pandas as pd\nwith pdfplumber.open(file_path) as pdf:\n    tbl = pdf.pages[0].extract_table()\n    df = pd.DataFrame(tbl[1:], columns=tbl[0]) then analyze df. IMPORTANT: If a column contains currency symbols (e.g. ₹, $) or commas, you MUST clean it by chaining .str.replace like so: df['col'] = df['col'].str.replace('[₹$,]', '', regex=True).astype(float) before performing any calculations. Do not use string splitting on text."
+            else:
+                model_prompt = f"{prompt}\n\nWrite a Python script to perform this calculation. You must output the raw python script wrapped in ```python ... ``` tags."
         else:
             model_prompt = prompt   # context is already in sys_prompt above
 
@@ -977,7 +1003,7 @@ async def agent_stream(req: TaskRequest):
             await asyncio.sleep(0.5)
 
             import re
-            code_match = re.search(r'`(?:python|java|c\+\+|cpp|c|javascript|js|go|rust)?\s*(.*?)\s*`', answer_text, re.DOTALL | re.IGNORECASE)
+            code_match = re.search(r'```(?:python|java|c\+\+|cpp|c|javascript|js|go|rust)?\s*(.*?)\s*```', answer_text, re.DOTALL | re.IGNORECASE)
             if code_match:
                 executed_code_block = code_match.group(1).strip()
             else:
@@ -1010,12 +1036,22 @@ async def agent_stream(req: TaskRequest):
             yield f"data: {json.dumps(p4)}\n\n"
             await asyncio.sleep(0.8)
 
+            stdout_log = calc_result.get('tee_stdout', '')
+            error_log = calc_result.get('error', '')
+            
+            output_snippet = ""
+            if stdout_log:
+                output_snippet += f"\n\n**Standard Output:**\n```\n{stdout_log}\n```"
+            if error_log:
+                output_snippet += f"\n\n**Standard Error:**\n```\n{error_log}\n```"
+
             summary_text = (
                 f"When using the Secure Enclave Executor to run code, the agent generated the following script:\n\n"
                 f"```python\n{executed_code_block}\n```\n\n"
                 f"### Secure Enclave Execution Output:\n"
                 f"Verification script executed successfully for user prompt: '{prompt}'. "
                 f"Overall Integrity Status: {status_str}."
+                f"{output_snippet}"
             )
 
             docx_path = synthesizer.generate_docx_memo(
