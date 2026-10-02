@@ -579,10 +579,10 @@ async def agent_stream(req: TaskRequest):
                     import pandas as pd
                     if active_filename.endswith(".csv"):
                         df_preview = pd.read_csv(file_path_raw, nrows=3)
-                        preview = f"\n\nData Columns & Preview:\n{df_preview.to_markdown()}"
+                        preview = f"\n\nExact Pandas Columns: {list(df_preview.columns)}\nData Preview:\n{df_preview.to_markdown()}"
                     elif active_filename.endswith((".xls", ".xlsx")):
                         df_preview = pd.read_excel(file_path_raw, nrows=3)
-                        preview = f"\n\nData Columns & Preview:\n{df_preview.to_markdown()}"
+                        preview = f"\n\nExact Pandas Columns: {list(df_preview.columns)}\nData Preview:\n{df_preview.to_markdown()}"
                 except Exception as e:
                     pass
                 model_prompt = f"User Prompt: {prompt}\n\nData Source File: '{file_path}'{preview}\n\nWrite a Python script to analyze this data file. You must output the raw python script wrapped in ```python ... ``` tags. Load the file using pandas or appropriate library."
