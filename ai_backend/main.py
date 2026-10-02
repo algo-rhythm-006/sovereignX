@@ -570,6 +570,13 @@ async def agent_stream(req: TaskRequest):
                 base64_img = encode_image_to_base64(os.path.join(KB_DIR, active_filename))
         elif intent_category in ["GENERAL_CODE_GEN", "diagram_gen"]:
             model_prompt = prompt   # no context injection for code/diagram tasks
+        elif intent_category == "code_math":
+            if active_filename:
+                import os
+                file_path = os.path.join(KB_DIR, active_filename).replace("\\", "\\\\")
+                model_prompt = f"User Prompt: {prompt}\n\nData Source File: '{file_path}'\n\nWrite a Python script to analyze this data file. You must output the raw python script wrapped in `python ... ` tags. Load the file using pandas or appropriate library."
+            else:
+                model_prompt = f"{prompt}\n\nWrite a Python script to perform this calculation. You must output the raw python script wrapped in `python ... ` tags."
         else:
             model_prompt = prompt   # context is already in sys_prompt above
 
