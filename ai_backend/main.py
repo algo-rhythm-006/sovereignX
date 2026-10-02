@@ -21,13 +21,13 @@ for p in [PARENT_DIR, CURR_DIR]:
         sys.path.insert(0, p)
 
 try:
-    from backend.network_guard import guard_instance
-    from backend.model_router import DynamicModelRouter
-    from backend.ollama_client import OllamaClient
-    from backend.tools import SecureEnclaveExecutor, DeliverableSynthesizer, LocalRAGConnector
-    from backend.collaborative_graph import CollaborativeLangGraphPipeline, vision_agent_node, engineering_agent_node, reporting_agent_node
-    from backend.image_engine import LocalImageGenerator
-    from backend.system_one import (
+    from ai_backend.network_guard import guard_instance
+    from ai_backend.model_router import DynamicModelRouter
+    from ai_backend.ollama_client import OllamaClient
+    from ai_backend.tools import SecureEnclaveExecutor, DeliverableSynthesizer, LocalRAGConnector
+    from ai_backend.collaborative_graph import CollaborativeLangGraphPipeline, vision_agent_node, engineering_agent_node, reporting_agent_node
+    from ai_backend.image_engine import LocalImageGenerator
+    from ai_backend.system_one import (
         evaluate_system_one_state, SystemOneResponse,
         TargetIndex, INDEX_TO_DOCUMENT_FILTER, SAFETY_THRESHOLD
     )
@@ -65,7 +65,7 @@ app.add_middleware(
 # Setup workspace directories
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 KB_DIR = os.path.join(BASE_DIR, "knowledge_base")
-OUTPUT_DIR = os.path.join(BASE_DIR, "backend", "output_deliverables")
+OUTPUT_DIR = os.path.join(BASE_DIR, "ai_backend", "output_deliverables")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Instantiate core engines
@@ -1090,10 +1090,32 @@ async def auto_name_session(prompt: str, session_id: str):
         logger.error(f"Failed to auto-name session {session_id}: {e}")
 
 
+class IngestRequest(BaseModel):
+    file_path: str
+
+@app.post("/api/v1/ingest")
+async def ingest_local_file(req: IngestRequest):
+    """Dedicated daemon endpoint for n8n to trigger ChromaDB ingestion via file path."""
+    if not os.path.exists(req.file_path):
+        raise HTTPException(status_code=404, detail=f"File not found on host: {req.file_path}")
+    
+    # Trigger the RAG pipeline directly on the existing file
+    rag.ingest_document(req.file_path)
+    return {"success": True, "message": "Indexed successfully"}
 
 
+class IngestRequest(BaseModel):
+    file_path: str
 
-
+@app.post("/api/v1/ingest")
+async def ingest_local_file(req: IngestRequest):
+    """Dedicated daemon endpoint for n8n to trigger ChromaDB ingestion via file path."""
+    if not os.path.exists(req.file_path):
+        raise HTTPException(status_code=404, detail=f"File not found on host: {req.file_path}")
+    
+    # Trigger the RAG pipeline directly on the existing file
+    rag.ingest_document(req.file_path)
+    return {"success": True, "message": "Indexed successfully"}
 
 
 
