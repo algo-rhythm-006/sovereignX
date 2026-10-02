@@ -2,8 +2,11 @@ import React, { useState, useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { 
   Paperclip, ArrowRight, FileText, CheckCircle, Database, 
-  Terminal, ShieldCheck, FileKey, X, Download
+  Terminal, ShieldCheck, FileKey, X, Download, Copy, Check
 } from "lucide-react";
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import { LiquidGlassCard } from "@/components/ui/liquid-glass-card";
 import { ThinkingOrb } from "@/components/ui/thinking-orbs";
 import type { OrbState } from "@/components/ui/thinking-orbs";
@@ -226,6 +229,46 @@ interface ChatMessageProps {
   message: ChatMessageData;
 }
 
+const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
+  const match = /language-(\w+)/.exec(className || '');
+  const [copied, setCopied] = useState(false);
+  const codeString = String(children).replace(/\n$/, '');
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(codeString);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  if (!inline && match) {
+    return (
+      <div className="relative group my-4 rounded-lg overflow-hidden border border-[#222]">
+        <div className="flex items-center justify-between px-4 py-2 bg-[#111] text-xs text-gray-400 font-mono border-b border-[#222]">
+          <span>{match[1]}</span>
+          <button onClick={handleCopy} className="hover:text-cyan-400 transition-colors flex items-center gap-1">
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? 'Copied!' : 'Copy'}
+          </button>
+        </div>
+        <SyntaxHighlighter
+          style={vscDarkPlus as any}
+          language={match[1]}
+          PreTag="div"
+          customStyle={{ margin: 0, padding: '1rem', background: '#050505', fontSize: '13px' }}
+          {...props}
+        >
+          {codeString}
+        </SyntaxHighlighter>
+      </div>
+    );
+  }
+  return (
+    <code className="bg-[#111] text-cyan-300 px-1.5 py-0.5 rounded-md text-sm border border-[#222]" {...props}>
+      {children}
+    </code>
+  );
+};
+
 export function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === "user";
   
@@ -249,12 +292,22 @@ export function ChatMessage({ message }: ChatMessageProps) {
         )}
 
         {/* Bubble */}
-        <div className={`p-4 rounded-[16px] text-sm leading-relaxed tracking-wide ${
+        <div className={`p-4 rounded-[16px] text-sm leading-relaxed tracking-wide markdown-body [&>p]:mb-4 [&>p:last-child]:mb-0 [&>ul]:list-disc [&>ul]:ml-5 [&>ol]:list-decimal [&>ol]:ml-5 [&>h1]:text-white [&>h1]:font-bold [&>h1]:text-2xl [&>h1]:mb-3 [&>h2]:text-white [&>h2]:font-bold [&>h2]:text-xl [&>h2]:mb-3 [&>h3]:text-white [&>h3]:font-bold [&>h3]:text-lg [&>h3]:mb-2 [&>h4]:text-white [&>h4]:font-bold [&>h4]:mb-2 ${
           isUser 
           ? 'bg-[#111] text-gray-200 border border-[#222] rounded-tr-sm shadow-[inset_0_2px_10px_rgba(255,255,255,0.02)]' 
           : 'bg-transparent text-gray-300 font-sans border-l-2 border-cyan-500/50 pl-5 ml-2 rounded-l-none'
         }`}>
-          {message.content}
+          {isUser ? (
+            message.content
+          ) : (
+            <ReactMarkdown
+              components={{
+                code: CodeBlock as any
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+          )}
         </div>
 
         {/* Attachments for user */}

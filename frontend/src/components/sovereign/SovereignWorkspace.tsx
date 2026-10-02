@@ -2,19 +2,23 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { gsap } from "gsap";
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import {
   ShieldCheck, Terminal, Database, FileText, Lock, ScanSearch,
   FileCheck, Plus, Search, ChevronLeft, ChevronRight, LogOut,
   User, Folder, Settings, Bell, HelpCircle, Cpu, Network,
   Download, Paperclip, X, ArrowUp, Activity, CheckCircle,
   Clock, GitBranch, ChevronDown, Zap, Copy, ThumbsUp, ThumbsDown,
-  RotateCcw, Workflow, Check, Menu, PanelLeft, PanelLeftClose, Image, Sparkles
+  RotateCcw, Workflow, Check, Menu, PanelLeft, PanelLeftClose, Image, Sparkles, Trash2
 } from "lucide-react";
 import { ThinkingOrb } from "@/components/ui/thinking-orbs";
 import type { OrbState } from "@/components/ui/thinking-orbs";
 import Avatar from "@/components/ui/avatar";
 import { BorderBeam } from "@/components/ui/border-beam";
 import { LiquidGlassCard, LiquidButton } from "@/components/ui/liquid-glass-card";
+import { GeneratingOrb } from "@/components/generating-orb";
 import FolderFloat from "@/components/ui/floating-folder";
 import { ExecutionStatus, ChatMessageData, UserProfileData, TimelineStep, TimelineStepStatus } from "./types";
 
@@ -44,10 +48,10 @@ const STEP_TIMING_MS: Partial<Record<ExecutionStatus, number>> = {
 };
 
 const QUICK_ACTIONS = [
-  { icon: ScanSearch,  title: "Audit System Architecture", desc: "Map your attack surface and identify unapproved network egress paths.", tag: "Security" },
-  { icon: FileCheck,   title: "Extract Compliance Report", desc: "Cross-reference documents against regulatory frameworks locally.", tag: "Compliance" },
-  { icon: Terminal,    title: "Execute Sandbox Analysis", desc: "Run integrity scripts in a fully isolated local environment.", tag: "Sandbox" },
-  { icon: GitBranch,   title: "Analyze Knowledge Graph", desc: "Build entity relationships from your sovereign document corpus.", tag: "Analysis" },
+  { icon: ScanSearch, title: "Audit System Architecture", desc: "Map your attack surface and identify unapproved network egress paths.", tag: "Security" },
+  { icon: FileCheck, title: "Extract Compliance Report", desc: "Cross-reference documents against regulatory frameworks locally.", tag: "Compliance" },
+  { icon: Terminal, title: "Execute Sandbox Analysis", desc: "Run integrity scripts in a fully isolated local environment.", tag: "Sandbox" },
+  { icon: GitBranch, title: "Analyze Knowledge Graph", desc: "Build entity relationships from your sovereign document corpus.", tag: "Analysis" },
 ];
 
 // ─── SIDEBAR ───────────────────────────────────────────────────────────────────
@@ -57,7 +61,8 @@ function Sidebar({
   historyList = [],
   searchQuery = "",
   setSearchQuery,
-  onHistoryClick
+  onHistoryClick,
+  onDeleteHistory
 }: {
   collapsed: boolean;
   setCollapsed: (v: boolean) => void;
@@ -70,14 +75,16 @@ function Sidebar({
   searchQuery?: string;
   setSearchQuery?: (v: string) => void;
   onHistoryClick?: (id: string) => void;
+  onDeleteHistory?: (id: string) => void;
 }) {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [kbOpen, setKbOpen] = useState(true);
   const [historyOpen, setHistoryOpen] = useState(true);
+  const [workflowsOpen, setWorkflowsOpen] = useState(true);
   const [folderOpen, setFolderOpen] = useState(false);
 
   const [documents, setDocuments] = useState<any[]>([]);
-  
+
   const fetchDocuments = useCallback(async () => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_AI_API_URL || "http://localhost:8000";
@@ -89,9 +96,26 @@ function Sidebar({
     }
   }, []);
 
+  const handleDeleteDocument = async (e: React.MouseEvent, filename: string) => {
+    e.stopPropagation();
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_AI_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiUrl}/api/v1/knowledge-base/files/${encodeURIComponent(filename)}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        setDocuments(prev => prev.filter(d => d.filename !== filename));
+      } else {
+        console.error("Failed to delete document");
+      }
+    } catch (err) {
+      console.error("Failed to delete document", err);
+    }
+  };
+
   useEffect(() => {
     fetchDocuments();
-    
+
     const handleRefetch = () => fetchDocuments();
     window.addEventListener("refetchKnowledgeBase", handleRefetch);
     return () => window.removeEventListener("refetchKnowledgeBase", handleRefetch);
@@ -138,7 +162,7 @@ function Sidebar({
             </span>
           </div>
         )}
-        
+
         {!collapsed ? (
           <button
             onClick={() => setCollapsed(true)}
@@ -148,10 +172,10 @@ function Sidebar({
           </button>
         ) : (
           <div className="w-full flex justify-center pt-2">
-             <button onClick={() => setCollapsed(false)} className="group relative outline-none">
-               <Avatar size="sm" color="cyan" shape="circle" />
-               <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 rounded-full transition-colors"></div>
-             </button>
+            <button onClick={() => setCollapsed(false)} className="group relative outline-none">
+              <Avatar size="sm" color="cyan" shape="circle" />
+              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 rounded-full transition-colors"></div>
+            </button>
           </div>
         )}
       </div>
@@ -159,18 +183,18 @@ function Sidebar({
       {/* Collapsed icon strip */}
       {collapsed && (
         <div data-lenis-prevent="true" className="flex-1 flex flex-col items-center gap-4 py-4 overflow-y-auto w-[72px] mx-auto mt-2" style={{ scrollbarWidth: "none" }}>
-          
+
           {/* New Execution */}
-          <button 
-            onClick={() => { setCollapsed(false); onNewExecution(); }} 
-            className="relative overflow-hidden w-12 h-12 rounded-[14px] bg-black/60 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] hover:shadow-[inset_0_0_0_1px_rgba(0,163,255,0.4)] flex items-center justify-center transition-all group shrink-0" 
+          <button
+            onClick={() => { setCollapsed(false); onNewExecution(); }}
+            className="relative overflow-hidden w-12 h-12 rounded-[14px] bg-black/60 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] hover:shadow-[inset_0_0_0_1px_rgba(0,163,255,0.4)] flex items-center justify-center transition-all group shrink-0"
             title="New Execution"
           >
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#00A3FF] to-transparent opacity-80 pointer-events-none transition-opacity duration-200 group-hover:opacity-100" />
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#00A3FF] blur-sm opacity-60 pointer-events-none transition-opacity duration-200 group-hover:opacity-80" />
             <Plus className="relative z-10 w-[22px] h-[22px] text-[#00A3FF] group-hover:text-white transition-colors" />
           </button>
-          
+
           <div className="w-6 h-[1px] bg-white/10 my-1 shrink-0" />
 
           {/* Navigation Icons */}
@@ -206,9 +230,9 @@ function Sidebar({
 
           {/* Bottom Profile / Settings */}
           <div className="mt-auto mb-6 flex flex-col gap-5 items-center shrink-0 w-full">
-            <button 
-              onClick={() => setCollapsed(false)} 
-              className="relative overflow-hidden w-12 h-12 rounded-xl flex items-center justify-center text-white/50 hover:text-white bg-black/20 hover:bg-black/40 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_-4px_20px_-4px_rgba(255,255,255,0.05)] hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0_-4px_20px_-4px_rgba(255,255,255,0.15)] transition-all duration-200 group" 
+            <button
+              onClick={() => setCollapsed(false)}
+              className="relative overflow-hidden w-12 h-12 rounded-xl flex items-center justify-center text-white/50 hover:text-white bg-black/20 hover:bg-black/40 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_-4px_20px_-4px_rgba(255,255,255,0.05)] hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0_-4px_20px_-4px_rgba(255,255,255,0.15)] transition-all duration-200 group"
               title="Settings"
             >
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 group-hover:opacity-100 pointer-events-none transition-opacity duration-200" />
@@ -231,7 +255,7 @@ function Sidebar({
           style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.1) transparent" }}
         >
           {/* New + search */}
-          <div className="sb-item px-3 py-2.5 space-y-1">
+          <div className="sb-item relative z-50 px-3 py-2.5 space-y-1">
             <button
               onClick={onNewExecution}
               className="relative overflow-hidden w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium text-white/90 hover:text-white transition-all duration-200 group"
@@ -247,15 +271,72 @@ function Sidebar({
               <Plus className="relative z-10 w-[18px] h-[18px] text-[#00A3FF] group-hover:text-white transition-colors" />
               <span className="relative z-10">New Execution</span>
             </button>
-            <button
-              className="relative overflow-hidden w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium text-white/50 hover:text-white hover:bg-black/40 hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_-4px_20px_-4px_rgba(255,255,255,0.1)] transition-all duration-200 group"
-              style={{ fontFamily: SF }}
-            >
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-0 group-hover:opacity-70 pointer-events-none transition-opacity duration-200" />
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-0 group-hover:opacity-30 pointer-events-none transition-opacity duration-200" />
-              <Search className="relative z-10 w-[18px] h-[18px] text-white/30 group-hover:text-white/80 transition-colors duration-200" />
-              <span className="relative z-10">Search</span>
-            </button>
+            <div className="relative w-full z-50">
+              <div
+                className="relative overflow-hidden w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium text-white/50 bg-transparent hover:bg-black/40 focus-within:bg-black/60 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)] focus-within:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0_-4px_20px_-4px_rgba(255,255,255,0.1)] transition-all duration-200 group"
+                style={{ fontFamily: SF }}
+              >
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-0 group-hover:opacity-70 group-focus-within:opacity-100 pointer-events-none transition-opacity duration-200" />
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-0 group-hover:opacity-30 group-focus-within:opacity-60 pointer-events-none transition-opacity duration-200" />
+                <Search className="relative z-10 w-[18px] h-[18px] text-white/30 group-hover:text-white/80 group-focus-within:text-white transition-colors duration-200 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Search history & files..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery?.(e.target.value)}
+                  className="relative z-10 bg-transparent border-none outline-none w-full text-white placeholder-white/30"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery?.("")}
+                    className="relative z-10 hover:text-white transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {searchQuery && (
+                <div className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-white/10 bg-[#0a0a0a]/95 backdrop-blur-2xl shadow-2xl overflow-hidden z-50 flex flex-col max-h-[300px]">
+                  <div className="overflow-y-auto p-2 space-y-1" style={{ scrollbarWidth: "none" }}>
+                    {historyList && historyList.filter(h => h.title.toLowerCase().includes(searchQuery.toLowerCase())).length > 0 && (
+                      <div className="mb-2">
+                        <div className="px-2 py-1 text-[10px] font-bold tracking-wider text-white/30 uppercase">History</div>
+                        {historyList.filter(h => h.title.toLowerCase().includes(searchQuery.toLowerCase())).map((h: any) => (
+                          <button
+                            key={h.session_id}
+                            onClick={() => { onHistoryClick?.(h.session_id); setSearchQuery?.(""); }}
+                            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/10 text-left text-[13px] text-white/80 transition-colors"
+                          >
+                            <Clock className="w-3.5 h-3.5 shrink-0 opacity-50" />
+                            <span className="truncate">{h.title}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {documents && documents.filter(d => d.filename.toLowerCase().includes(searchQuery.toLowerCase())).length > 0 && (
+                      <div>
+                        <div className="px-2 py-1 text-[10px] font-bold tracking-wider text-white/30 uppercase">Files</div>
+                        {documents.filter(d => d.filename.toLowerCase().includes(searchQuery.toLowerCase())).map((d: any) => (
+                          <div
+                            key={d.filename}
+                            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-[13px] text-white/80"
+                          >
+                            <FileText className="w-3.5 h-3.5 shrink-0 opacity-50" />
+                            <span className="truncate">{d.filename}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {(!historyList || historyList.filter(h => h.title.toLowerCase().includes(searchQuery.toLowerCase())).length === 0) && (!documents || documents.filter(d => d.filename.toLowerCase().includes(searchQuery.toLowerCase())).length === 0) && (
+                      <div className="px-2 py-3 text-center text-xs text-white/30">No results found</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
             <button
               onClick={() => setActiveMode("image")}
               className="relative overflow-hidden w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium text-white/90 hover:text-white transition-all duration-200 group mt-1"
@@ -276,35 +357,54 @@ function Sidebar({
           <div className="px-3 space-y-5 mt-2">
             {/* Workflows */}
             <div className="sb-item">
-              <div className="flex items-center gap-1.5 px-2 mb-2 mt-2">
-                <span className="text-xs font-semibold text-white/30 uppercase tracking-wider" style={{ fontFamily: SF }}>
+              <button
+                onClick={() => setWorkflowsOpen(!workflowsOpen)}
+                className="w-full flex items-center justify-between px-2 mb-2 mt-2 group"
+              >
+                <span className="text-xs font-semibold text-white/30 uppercase tracking-wider group-hover:text-white/50 transition-colors" style={{ fontFamily: SF }}>
                   Workflows
                 </span>
-              </div>
-              <div className="space-y-0.5">
-                {[
-                  { icon: ScanSearch, label: "Audit System Architecture", active: true },
-                  { icon: FileCheck, label: "Extract Compliance" },
-                  { icon: Terminal, label: "Execute Sandbox" },
-                  { icon: Workflow, label: "Agentic Pipeline" },
-                ].map(({ icon: Icon, label, active }) => (
-                  <button
-                    key={label}
-                    className={`relative overflow-hidden w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium transition-all duration-200 group ${
-                      active 
-                        ? "text-white bg-black/60 shadow-[0_8px_32px_-8px_rgba(0,163,255,0.2),inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0_-4px_20px_-4px_rgba(0,163,255,0.3)] backdrop-blur-xl" 
-                        : "text-white/50 hover:text-white hover:bg-black/60 hover:shadow-[0_8px_32px_-8px_rgba(0,163,255,0.2),inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0_-4px_20px_-4px_rgba(0,163,255,0.3)] hover:backdrop-blur-xl"
-                    }`}
-                    style={{ fontFamily: SF }}
-                  >
-                    <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#00A3FF] to-transparent pointer-events-none transition-opacity duration-200 ${active ? 'opacity-80' : 'opacity-0 group-hover:opacity-80'}`} />
-                    <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#00A3FF] blur-sm pointer-events-none transition-opacity duration-200 ${active ? 'opacity-60' : 'opacity-0 group-hover:opacity-60'}`} />
-                    
-                    <Icon className={`relative z-10 w-[18px] h-[18px] shrink-0 transition-colors duration-200 ${active ? "text-[#00A3FF]" : "text-white/30 group-hover:text-[#00A3FF]"}`} />
-                    <span className="relative z-10 truncate">{label}</span>
-                  </button>
-                ))}
-              </div>
+                <ChevronDown className={`w-3.5 h-3.5 text-white/30 transition-transform duration-200 ${workflowsOpen ? "rotate-0" : "-rotate-90"}`} />
+              </button>
+              {workflowsOpen && (
+                <div
+                  className="relative overflow-hidden rounded-2xl p-1.5"
+                  style={{
+                    background: "rgba(0,0,0,0.6)",
+                    boxShadow: "0 8px 32px -8px rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 -4px 20px -4px rgba(255, 255, 255, 0.12)",
+                    backdropFilter: "blur(24px)",
+                  }}
+                >
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 pointer-events-none" />
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 pointer-events-none" />
+
+                  <div className="space-y-0.5 relative z-10 pb-0.5">
+                    {[
+                      { icon: ScanSearch, label: "Audit System Architecture", active: true },
+                      { icon: FileCheck, label: "Extract Compliance" },
+                      { icon: Terminal, label: "Execute Sandbox" },
+                      { icon: Workflow, label: "Agentic Pipeline" },
+                    ].map(({ icon: Icon, label, active }) => (
+                      <button
+                        key={label}
+                        className={`relative overflow-hidden w-full flex items-center justify-between px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-200 group ${active
+                            ? "text-white bg-black/40 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0_-4px_20px_-4px_rgba(255,255,255,0.12)]"
+                            : "text-white/50 hover:text-white hover:bg-black/40 hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_-4px_20px_-4px_rgba(255,255,255,0.08)]"
+                          }`}
+                        style={{ fontFamily: SF }}
+                      >
+                        <div className="flex items-center gap-3 w-full text-left overflow-hidden">
+                          <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent pointer-events-none transition-opacity duration-200 ${active ? 'opacity-70' : 'opacity-0 group-hover:opacity-70'}`} />
+                          <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm pointer-events-none transition-opacity duration-200 ${active ? 'opacity-30' : 'opacity-0 group-hover:opacity-30'}`} />
+
+                          <Icon className={`relative z-10 w-[16px] h-[16px] shrink-0 transition-colors duration-200 ${active ? "text-white/80" : "text-white/30 group-hover:text-white/80"}`} />
+                          <span className="relative z-10 truncate">{label}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
 
@@ -315,7 +415,7 @@ function Sidebar({
                   Quick Actions
                 </span>
               </div>
-              <div 
+              <div
                 className={`relative rounded-2xl p-4 pb-5 flex justify-center transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${folderOpen ? "pt-40" : "pt-6"}`}
                 style={{
                   background: "rgba(0,0,0,0.6)",
@@ -325,8 +425,8 @@ function Sidebar({
               >
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 pointer-events-none rounded-b-2xl" />
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 pointer-events-none rounded-b-2xl" />
-                
-                <FolderFloat 
+
+                <FolderFloat
                   items={QUICK_ACTIONS.map(a => a.title)}
                   label="Workflows"
                   sublabel="4 Available Actions"
@@ -358,7 +458,7 @@ function Sidebar({
                 </div>
               </button>
               {kbOpen && (
-                <div 
+                <div
                   className="relative overflow-hidden rounded-2xl p-1.5"
                   style={{
                     background: "rgba(0,0,0,0.6)",
@@ -373,22 +473,30 @@ function Sidebar({
                       <div className="px-3 py-2 text-xs text-white/30 italic text-center" style={{ fontFamily: SF }}>No documents uploaded</div>
                     ) : (
                       documents.map((doc: any, i: number) => (
-                        <button
+                        <div
                           key={doc.filename}
-                          className={`relative overflow-hidden w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 text-left group ${
-                            i === 0
+                          className={`relative overflow-hidden w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all duration-200 group ${i === 0
                               ? "text-white bg-black/40 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0_-4px_20px_-4px_rgba(255,255,255,0.12)]"
                               : "text-white/50 hover:text-white hover:bg-black/40 hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_-4px_20px_-4px_rgba(255,255,255,0.08)]"
-                          }`}
+                            }`}
                         >
-                          <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent pointer-events-none transition-opacity duration-200 ${i === 0 ? 'opacity-70' : 'opacity-0 group-hover:opacity-70'}`} />
-                          <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm pointer-events-none transition-opacity duration-200 ${i === 0 ? 'opacity-30' : 'opacity-0 group-hover:opacity-30'}`} />
+                          <div className="flex items-center gap-3 w-[85%] overflow-hidden">
+                            <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent pointer-events-none transition-opacity duration-200 ${i === 0 ? 'opacity-70' : 'opacity-0 group-hover:opacity-70'}`} />
+                            <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm pointer-events-none transition-opacity duration-200 ${i === 0 ? 'opacity-30' : 'opacity-0 group-hover:opacity-30'}`} />
 
-                          <FileText className={`relative z-10 w-[18px] h-[18px] shrink-0 transition-colors duration-200 ${i === 0 ? "text-white/80" : "text-white/30 group-hover:text-white/80"}`} />
-                          <span className="relative z-10 truncate text-[13px] font-medium" style={{ fontFamily: SF }} title={doc.filename}>
-                            {doc.filename}
-                          </span>
-                        </button>
+                            <FileText className={`relative z-10 w-[18px] h-[18px] shrink-0 transition-colors duration-200 ${i === 0 ? "text-white/80" : "text-white/30 group-hover:text-white/80"}`} />
+                            <span className="relative z-10 truncate text-[13px] font-medium" style={{ fontFamily: SF }} title={doc.filename}>
+                              {doc.filename}
+                            </span>
+                          </div>
+                          <button
+                            onClick={(e) => handleDeleteDocument(e, doc.filename)}
+                            className="relative z-10 text-white/30 hover:text-red-400 transition-colors shrink-0"
+                            title="Delete document"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       ))
                     )}
                   </div>
@@ -409,7 +517,7 @@ function Sidebar({
               </button>
               {historyOpen && (
                 <div className="space-y-3 pb-1">
-                  <div 
+                  <div
                     className="relative overflow-hidden rounded-2xl p-1.5"
                     style={{
                       background: "rgba(0,0,0,0.6)",
@@ -419,21 +527,35 @@ function Sidebar({
                   >
                     <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 pointer-events-none" />
                     <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 pointer-events-none" />
-                    
+
                     <div className="space-y-0.5 relative z-10 pb-0.5">
                       {historyList && historyList.filter(h => !searchQuery || h.title.toLowerCase().includes(searchQuery.toLowerCase())).map((h: any) => (
-                        <button
+                        <div
                           key={h.session_id}
-                          onClick={() => onHistoryClick?.(h.session_id)}
-                          className="relative overflow-hidden w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-200 text-left group text-white/50 hover:text-white hover:bg-black/40 hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_-4px_20px_-4px_rgba(255,255,255,0.08)]"
+                          className="relative overflow-hidden w-full flex items-center justify-between px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-200 group text-white/50 hover:bg-black/40 hover:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05),inset_0_-4px_20px_-4px_rgba(255,255,255,0.08)]"
                           style={{ fontFamily: SF }}
                         >
-                          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-0 group-hover:opacity-70 pointer-events-none transition-opacity duration-200" />
-                          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-0 group-hover:opacity-30 pointer-events-none transition-opacity duration-200" />
-                          
-                          <Clock className="relative z-10 w-[16px] h-[16px] shrink-0 text-white/30 group-hover:text-white/80 transition-colors duration-200" />
-                          <span className="relative z-10 truncate">{h.title}</span>
-                        </button>
+                          <button
+                            onClick={() => onHistoryClick?.(h.session_id)}
+                            className="flex items-center gap-3 w-[85%] text-left overflow-hidden hover:text-white transition-colors"
+                          >
+                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-0 group-hover:opacity-70 pointer-events-none transition-opacity duration-200" />
+                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-0 group-hover:opacity-30 pointer-events-none transition-opacity duration-200" />
+
+                            <Clock className="relative z-10 w-[16px] h-[16px] shrink-0 text-white/30 group-hover:text-white/80 transition-colors duration-200" />
+                            <span className="relative z-10 truncate">{h.title}</span>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDeleteHistory?.(h.session_id);
+                            }}
+                            className="relative z-10 text-white/30 hover:text-red-400 transition-colors shrink-0"
+                            title="Delete session"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -451,9 +573,9 @@ function Sidebar({
       )}
       {!collapsed && (
         <div className="sb-item absolute bottom-3 left-3 right-3 z-20">
-          <div 
+          <div
             className="relative flex items-center justify-between gap-3 px-3 py-3 rounded-2xl bg-black/60 backdrop-blur-xl w-full group cursor-pointer transition-colors hover:bg-black/80"
-            style={{ 
+            style={{
               boxShadow: '0 4px 24px -6px rgba(0, 163, 255, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.05), inset 0 -4px 12px -2px rgba(0, 163, 255, 0.3)'
             }}
           >
@@ -465,20 +587,20 @@ function Sidebar({
             <div className="relative shrink-0">
               <Avatar size="sm" color="white" shape="circle" />
             </div>
-            
+
             <div className="flex-1 flex flex-col justify-center min-w-0">
               <div className="text-[13px] font-semibold text-white/95 truncate tracking-tight" style={{ fontFamily: SF }}>
                 {user?.name ?? "Prithvi Raj Thakur"}
               </div>
               <div className="text-[10px] text-white/50 mt-1" style={{ fontFamily: "Geist Mono, 'SF Mono', monospace", lineHeight: "1.3" }}>
                 <span className="text-[#00A3FF] font-semibold">PRO</span> <span className="opacity-50">·</span> System Admin
-                <br/>
+                <br />
                 <span className="text-white/30 text-[9px]">Secured Air-Gapped</span>
               </div>
             </div>
-            
-            <button 
-              onClick={onLogout} 
+
+            <button
+              onClick={onLogout}
               className="w-7 h-7 flex items-center justify-center rounded-full text-white/30 hover:text-[#00A3FF] hover:bg-[#00A3FF]/10 shrink-0 transition-all duration-300 relative z-10 group/btn"
               title="Settings"
             >
@@ -495,6 +617,7 @@ function Sidebar({
 function Topbar({ onToggleSidebar, sidebarCollapsed }: { onToggleSidebar: () => void; sidebarCollapsed: boolean }) {
   const [statsOpen, setStatsOpen] = useState(false);
   const [wanKbs, setWanKbs] = useState<number>(0.0);
+  const [ollamaOnline, setOllamaOnline] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchTelemetry = async () => {
@@ -504,6 +627,9 @@ function Topbar({ onToggleSidebar, sidebarCollapsed }: { onToggleSidebar: () => 
         const data = await res.json();
         if (data.wan_ingress_kbs !== undefined) {
           setWanKbs(data.wan_ingress_kbs);
+        }
+        if (data.ollama_online !== undefined) {
+          setOllamaOnline(data.ollama_online);
         }
       } catch (err) {
         // silently ignore fetch errors
@@ -526,8 +652,8 @@ function Topbar({ onToggleSidebar, sidebarCollapsed }: { onToggleSidebar: () => 
       }}
     >
       <div className="flex items-center gap-2 md:gap-3">
-        <button 
-          onClick={onToggleSidebar} 
+        <button
+          onClick={onToggleSidebar}
           className={`text-white/50 hover:text-white transition-colors w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 ${!sidebarCollapsed ? 'md:hidden' : ''}`}
           title="Toggle Sidebar"
         >
@@ -539,26 +665,24 @@ function Topbar({ onToggleSidebar, sidebarCollapsed }: { onToggleSidebar: () => 
       {/* Desktop Stats */}
       <div className="hidden md:flex items-center gap-1.5">
         {[
-          { icon: Network, label: `WAN: ${wanKbs.toFixed(1)} KB/s`, warn: true },
-          { icon: Cpu, label: "SLM: 3B" },
-          { icon: Activity, label: "VRAM: 4 GB" },
-        ].map(({ icon: Icon, label, warn }) => (
+          { icon: Network, label: `WAN: ${wanKbs.toFixed(1)} KB/s`, color: wanKbs === 0 ? "#10B981" : "#F59E0B" },
+          { icon: Cpu, label: "Ollama", color: ollamaOnline ? "#00A3FF" : "#EF4444" },
+          { icon: Activity, label: "VRAM: 4 GB", color: "#00A3FF" },
+        ].map(({ icon: Icon, label, color }) => (
           <div
             key={label}
             className="relative overflow-hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px]"
             style={{
-              color: warn ? "#F59E0B" : "rgba(255,255,255,0.8)",
+              color: color === "#00A3FF" ? "rgba(255,255,255,0.8)" : color,
               background: "rgba(0,0,0,0.6)",
-              boxShadow: warn 
-                ? "0 4px 16px -4px rgba(245, 158, 11, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 -4px 16px -4px rgba(245, 158, 11, 0.3)"
-                : "0 4px 16px -4px rgba(0, 163, 255, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 -4px 16px -4px rgba(0, 163, 255, 0.2)",
+              boxShadow: `0 4px 16px -4px ${color}33, inset 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 -4px 16px -4px ${color}4D`,
               backdropFilter: "blur(12px)",
               fontFamily: "Geist Mono, 'SF Mono', monospace"
             }}
           >
-            <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent ${warn ? 'via-[#F59E0B]' : 'via-[#00A3FF]'} to-transparent opacity-80 pointer-events-none`} />
-            <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[2px] ${warn ? 'bg-[#F59E0B]' : 'bg-[#00A3FF]'} blur-[2px] opacity-60 pointer-events-none`} />
-            <Icon className={`relative z-10 w-3 h-3 ${warn ? 'text-[#F59E0B]' : 'text-[#00A3FF]'}`} />
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] opacity-80 pointer-events-none" style={{ background: `linear-gradient(90deg, transparent, ${color}, transparent)` }} />
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[2px] blur-[2px] opacity-60 pointer-events-none" style={{ backgroundColor: color }} />
+            <Icon className="relative z-10 w-3 h-3" style={{ color }} />
             <span className="relative z-10">{label}</span>
           </div>
         ))}
@@ -566,7 +690,7 @@ function Topbar({ onToggleSidebar, sidebarCollapsed }: { onToggleSidebar: () => 
 
       {/* Mobile Stats Dropdown */}
       <div className="md:hidden relative">
-        <button 
+        <button
           onClick={() => setStatsOpen(!statsOpen)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] bg-black/60 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] hover:bg-white/5 transition-colors"
         >
@@ -574,26 +698,26 @@ function Topbar({ onToggleSidebar, sidebarCollapsed }: { onToggleSidebar: () => 
           <span className="font-semibold tracking-wide text-white/80" style={{ fontFamily: "Geist Mono, 'SF Mono', monospace" }}>System</span>
           <ChevronDown className={`w-3 h-3 text-white/50 transition-transform duration-200 ${statsOpen ? 'rotate-180' : ''}`} />
         </button>
-        
+
         {statsOpen && (
           <div className="absolute top-full right-0 mt-3 p-2 rounded-xl bg-black/90 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-xl border border-white/5 min-w-[150px] flex flex-col gap-1.5 z-50">
             {[
-              { icon: Network, label: `WAN: ${wanKbs.toFixed(1)} KB/s`, warn: true },
-              { icon: Cpu, label: "SLM: 3B" },
-              { icon: Activity, label: "VRAM: 4 GB" },
-            ].map(({ icon: Icon, label, warn }) => (
+              { icon: Network, label: `WAN: ${wanKbs.toFixed(1)} KB/s`, color: wanKbs === 0 ? "#10B981" : "#F59E0B" },
+              { icon: Cpu, label: "Ollama", color: ollamaOnline ? "#00A3FF" : "#EF4444" },
+              { icon: Activity, label: "VRAM: 4 GB", color: "#00A3FF" },
+            ].map(({ icon: Icon, label, color }) => (
               <div
                 key={label}
                 className="relative overflow-hidden flex items-center gap-2 px-2 py-2 rounded-lg text-[10px]"
                 style={{
-                  color: warn ? "#F59E0B" : "rgba(255,255,255,0.8)",
-                  background: warn ? "rgba(245, 158, 11, 0.1)" : "rgba(255,255,255,0.03)",
+                  color: color === "#00A3FF" ? "rgba(255,255,255,0.8)" : color,
+                  background: color === "#00A3FF" ? "rgba(255,255,255,0.03)" : `${color}1A`,
                   fontFamily: "Geist Mono, 'SF Mono', monospace"
                 }}
               >
-                <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent ${warn ? 'via-[#F59E0B]' : 'via-[#00A3FF]'} to-transparent opacity-80 pointer-events-none`} />
-                <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[2px] ${warn ? 'bg-[#F59E0B]' : 'bg-[#00A3FF]'} blur-[2px] opacity-60 pointer-events-none`} />
-                <Icon className={`relative z-10 w-3 h-3 ${warn ? 'text-[#F59E0B]' : 'text-[#00A3FF]'}`} />
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] opacity-80 pointer-events-none" style={{ background: `linear-gradient(90deg, transparent, ${color}, transparent)` }} />
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[2px] blur-[2px] opacity-60 pointer-events-none" style={{ backgroundColor: color }} />
+                <Icon className="relative z-10 w-3 h-3" style={{ color }} />
                 <span className="relative z-10 font-semibold tracking-wide">{label}</span>
               </div>
             ))}
@@ -657,9 +781,8 @@ function PipelinePanel({ status }: { status: ExecutionStatus }) {
               <div key={step.id} className={`flex flex-col gap-1.5 transition-opacity duration-500 ${st === "pending" ? "opacity-20" : "opacity-100"}`}>
                 <div className="flex items-center gap-1.5">
                   <div
-                    className={`w-5 h-5 rounded-md flex items-center justify-center border transition-all duration-300 relative z-10 ${
-                      st === "completed" ? "text-[#A1A1AA]" : st === "running" ? "text-white animate-pulse" : "text-white/20"
-                    }`}
+                    className={`w-5 h-5 rounded-md flex items-center justify-center border transition-all duration-300 relative z-10 ${st === "completed" ? "text-[#A1A1AA]" : st === "running" ? "text-white animate-pulse" : "text-white/20"
+                      }`}
                     style={{
                       background: st === "completed" ? "rgba(161,161,170,0.12)" : st === "running" ? "rgba(161,161,170,0.2)" : "rgba(255,255,255,0.03)",
                       borderColor: st === "completed" ? "rgba(161,161,170,0.3)" : st === "running" ? "rgba(161,161,170,0.4)" : "rgba(255,255,255,0.08)",
@@ -693,6 +816,46 @@ function PipelinePanel({ status }: { status: ExecutionStatus }) {
 }
 
 // ─── CHAT MESSAGE ──────────────────────────────────────────────────────────────
+const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
+  const match = /language-(\w+)/.exec(className || '');
+  const [copied, setCopied] = useState(false);
+  const codeString = String(children).replace(/\n$/, '');
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(codeString);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  if (!inline && match) {
+    return (
+      <div className="relative group my-4 rounded-lg overflow-hidden border border-[#222]">
+        <div className="flex items-center justify-between px-4 py-2 bg-[#111] text-xs text-gray-400 font-mono border-b border-[#222]">
+          <span>{match[1]}</span>
+          <button onClick={handleCopy} className="hover:text-[#00A3FF] transition-colors flex items-center gap-1">
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? 'Copied!' : 'Copy'}
+          </button>
+        </div>
+        <SyntaxHighlighter
+          style={vscDarkPlus as any}
+          language={match[1]}
+          PreTag="div"
+          customStyle={{ margin: 0, padding: '1rem', background: '#050505', fontSize: '13px' }}
+          {...props}
+        >
+          {codeString}
+        </SyntaxHighlighter>
+      </div>
+    );
+  }
+  return (
+    <code className="bg-[#111] text-[#00A3FF] px-1.5 py-0.5 rounded-md text-sm border border-[#222]" {...props}>
+      {children}
+    </code>
+  );
+};
+
 function ChatMessage({ message, isLast }: { message: ChatMessageData; isLast?: boolean }) {
   const isUser = message.role === "user";
   const ref = useRef<HTMLDivElement>(null);
@@ -725,7 +888,12 @@ function ChatMessage({ message, isLast }: { message: ChatMessageData; isLast?: b
 
   if (isUser) {
     return (
-      <div ref={ref} className="flex justify-end gap-3 max-w-[840px] mx-auto px-4 mb-6">
+      <div 
+        ref={ref} 
+        className="flex justify-end gap-3 max-w-[840px] mx-auto px-4 mb-6"
+        onMouseEnter={() => setShowActions(true)}
+        onMouseLeave={() => setShowActions(false)}
+      >
         <div className="max-w-[75%] flex flex-col items-end">
           {message.attachments && message.attachments.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2 justify-end">
@@ -742,9 +910,16 @@ function ChatMessage({ message, isLast }: { message: ChatMessageData; isLast?: b
           >
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 pointer-events-none" />
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 pointer-events-none" />
-            <p className="text-[14px] text-white/80 leading-relaxed relative z-10" style={{ fontFamily: SF }}>{message.content}</p>
+            <p className="text-[14px] text-white/80 leading-relaxed relative z-10 whitespace-pre-wrap" style={{ fontFamily: SF }}>{message.content}</p>
           </div>
-          <div className="flex justify-end mt-1.5">
+          <div className="flex justify-end items-center gap-2 mt-1.5">
+            <button
+              title="Copy"
+              onClick={handleCopy}
+              className={`w-5 h-5 rounded-md flex items-center justify-center transition-all duration-150 ${copied ? "text-emerald-400" : "text-white/20 hover:text-white/50"}`}
+            >
+              {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+            </button>
             <span className="text-[10px] text-white/20" style={{ fontFamily: "Geist Mono, 'SF Mono', monospace" }}>{message.timestamp}</span>
           </div>
         </div>
@@ -779,7 +954,7 @@ function ChatMessage({ message, isLast }: { message: ChatMessageData; isLast?: b
 
       {/* Content */}
       <div className="pl-[36px] max-w-[88%]">
-        
+
         {/* Render Steps */}
         {message.steps && message.steps.length > 0 && (
           <div className="mb-4 space-y-2">
@@ -810,9 +985,15 @@ function ChatMessage({ message, isLast }: { message: ChatMessageData; isLast?: b
           <div className="relative overflow-hidden p-4 rounded-[16px] rounded-bl-sm bg-black/60 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] backdrop-blur-xl">
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 pointer-events-none" />
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 pointer-events-none" />
-            <p className="text-[14px] text-white/80 leading-[1.8] tracking-[-0.003em] relative z-10 whitespace-pre-wrap" style={{ fontFamily: SF }}>
-              {message.content}
-            </p>
+            <div className="text-[14px] text-white/80 leading-[1.8] tracking-[-0.003em] relative z-10 markdown-body [&>p]:mb-4 [&>p:last-child]:mb-0 [&>ul]:list-disc [&>ul]:ml-5 [&>ol]:list-decimal [&>ol]:ml-5 [&>h1]:text-white [&>h1]:font-bold [&>h1]:text-2xl [&>h1]:mb-3 [&>h2]:text-white [&>h2]:font-bold [&>h2]:text-xl [&>h2]:mb-3 [&>h3]:text-white [&>h3]:font-bold [&>h3]:text-lg [&>h3]:mb-2 [&>h4]:text-white [&>h4]:font-bold [&>h4]:mb-2 [&>strong]:text-white [&>strong]:font-bold" style={{ fontFamily: SF }}>
+              <ReactMarkdown
+                components={{
+                  code: CodeBlock as any
+                }}
+              >
+                {message.content}
+              </ReactMarkdown>
+            </div>
           </div>
         )}
 
@@ -829,32 +1010,32 @@ function ChatMessage({ message, isLast }: { message: ChatMessageData; isLast?: b
           </div>
         )}
         <div className={`flex items-center gap-0.5 mt-4 transition-opacity duration-200 ${showActions || isLast || feedback !== null || copied || isRegenerating ? "opacity-100" : "opacity-0"}`}>
-          <button 
-            title="Copy" 
+          <button
+            title="Copy"
             onClick={handleCopy}
             className={`w-7 h-7 rounded-md flex items-center justify-center transition-all duration-150 ${copied ? "text-emerald-400 bg-emerald-400/10" : "text-white/20 hover:text-white/50 hover:bg-white/5"}`}
           >
             {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
-          
-          <button 
-            title="Good" 
+
+          <button
+            title="Good"
             onClick={() => setFeedback(prev => prev === "up" ? null : "up")}
             className={`w-7 h-7 rounded-md flex items-center justify-center transition-all duration-150 ${feedback === "up" ? "text-emerald-400 bg-emerald-400/10" : "text-white/20 hover:text-white/50 hover:bg-white/5"}`}
           >
             <ThumbsUp className={`w-3.5 h-3.5 ${feedback === "up" ? "fill-emerald-400/20" : ""}`} />
           </button>
-          
-          <button 
-            title="Bad" 
+
+          <button
+            title="Bad"
             onClick={() => setFeedback(prev => prev === "down" ? null : "down")}
             className={`w-7 h-7 rounded-md flex items-center justify-center transition-all duration-150 ${feedback === "down" ? "text-rose-400 bg-rose-400/10" : "text-white/20 hover:text-white/50 hover:bg-white/5"}`}
           >
             <ThumbsDown className={`w-3.5 h-3.5 ${feedback === "down" ? "fill-rose-400/20" : ""}`} />
           </button>
-          
-          <button 
-            title="Regenerate" 
+
+          <button
+            title="Regenerate"
             onClick={handleRegenerate}
             className="w-7 h-7 rounded-md flex items-center justify-center text-white/20 hover:text-white/50 hover:bg-white/5 transition-all duration-150 group"
           >
@@ -882,7 +1063,7 @@ function Artifacts({ show }: { show: boolean }) {
       <div className="rounded-[16px] overflow-hidden relative bg-black/60 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] backdrop-blur-xl max-w-[88%]">
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[70%] h-[1px] bg-gradient-to-r from-transparent via-[#A1A1AA] to-transparent opacity-60 pointer-events-none" />
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-[3px] bg-[#A1A1AA] blur-sm opacity-30 pointer-events-none" />
-        
+
         <div className="flex items-center gap-2 px-4 py-3 bg-[#111]/40 border-b border-white/5">
           <Folder className="w-3.5 h-3.5 text-[#A1A1AA]" />
           <span className="text-[11px] font-bold text-[#A1A1AA] uppercase tracking-widest" style={{ fontFamily: "Geist Mono, 'SF Mono', monospace" }}>
@@ -942,7 +1123,7 @@ function EmptyState({ onAction }: { onAction: (q: string) => void }) {
     const ctx = gsap.context(() => {
       const tl = gsap.timeline();
       gsap.fromTo(ref.current, { opacity: 0 }, { opacity: 1, duration: 1.0 });
-      
+
       tl.fromTo(".es-logo", { y: -30, opacity: 0, scale: 0.9 }, { y: 0, opacity: 1, scale: 1, duration: 1.5, ease: "power3.out" }, 0.3)
         .fromTo(".es-title", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 1.2, ease: "power3.out" }, "-=0.7")
         .fromTo(".es-desc", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 1.2, ease: "power3.out" }, "-=0.9")
@@ -1016,7 +1197,15 @@ function Composer({ onExecute, isExecuting }: { onExecute: (q: string, files: Fi
   }, [query, files, canExecute, onExecute]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleExecute(); }
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!query.trim()) return;
+      if (!canExecute) return;
+
+      handleExecute();
+    }
   };
 
   useEffect(() => {
@@ -1043,19 +1232,19 @@ function Composer({ onExecute, isExecuting }: { onExecute: (q: string, files: Fi
         )}
 
         {/* Composer shell */}
-        <div 
+        <div
           className="relative rounded-2xl p-[1px] group transition-all duration-300"
           style={{
-             boxShadow: focused 
-               ? "0 20px 60px rgba(0,0,0,0.5), 0 0 50px -10px rgba(161, 161, 170, 0.3)" 
-               : "0 20px 60px rgba(0,0,0,0.3), 0 0 30px -10px rgba(161, 161, 170, 0.15)",
+            boxShadow: focused
+              ? "0 20px 60px rgba(0,0,0,0.5), 0 0 50px -10px rgba(161, 161, 170, 0.3)"
+              : "0 20px 60px rgba(0,0,0,0.3), 0 0 30px -10px rgba(161, 161, 170, 0.15)",
           }}
         >
           {/* Animated Neon Border Layer */}
           <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
-             <div className="absolute inset-[-50%] animate-[spin_4s_linear_infinite]" style={{
-                background: "conic-gradient(from 0deg, transparent 0%, transparent 60%, rgba(161, 161, 170, 0.5) 80%, rgba(161, 161, 170, 1) 100%)",
-             }} />
+            <div className="absolute inset-[-50%] animate-[spin_4s_linear_infinite]" style={{
+              background: "conic-gradient(from 0deg, transparent 0%, transparent 60%, rgba(161, 161, 170, 0.5) 80%, rgba(161, 161, 170, 1) 100%)",
+            }} />
           </div>
 
           {/* Static fallback border */}
@@ -1066,63 +1255,63 @@ function Composer({ onExecute, isExecuting }: { onExecute: (q: string, files: Fi
             className="relative rounded-[15px] overflow-hidden transition-all duration-300 z-10 h-full w-full"
             style={{
               background: focused ? "rgba(20,20,25,0.85)" : "rgba(10,10,12,0.75)",
-              boxShadow: focused 
-                ? "inset 0 0 60px -10px rgba(161,161,170,0.2)" 
+              boxShadow: focused
+                ? "inset 0 0 60px -10px rgba(161,161,170,0.2)"
                 : "inset 0 0 30px -10px rgba(161,161,170,0.1)",
               backdropFilter: "blur(24px)",
             }}
           >
-          <div className="flex items-end gap-3 px-4 py-3.5">
-            <label className="shrink-0 mb-0.5 text-white/25 hover:text-white/60 cursor-pointer transition-colors duration-150">
-              <input type="file" multiple className="hidden" onChange={e => e.target.files && setFiles(p => [...p, ...Array.from(e.target.files!)])} disabled={isExecuting} />
-              <Paperclip className="w-4 h-4" />
-            </label>
+            <div className="flex items-end gap-3 px-4 py-3.5">
+              <label className="shrink-0 mb-0.5 text-white/25 hover:text-white/60 cursor-pointer transition-colors duration-150">
+                <input type="file" multiple className="hidden" onChange={e => e.target.files && setFiles(p => [...p, ...Array.from(e.target.files!)])} disabled={isExecuting} />
+                <Paperclip className="w-4 h-4" />
+              </label>
 
-            <textarea
-              ref={textareaRef}
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onFocus={() => setFocused(true)}
-              onBlur={() => setFocused(false)}
-              disabled={isExecuting}
-              placeholder="Ask SovereignX to analyze your workspace..."
-              className="flex-1 bg-transparent border-none outline-none resize-none text-[14px] text-white/80 min-h-[24px] leading-relaxed py-0.5"
-              style={{ fontFamily: SF, caretColor: "#00A3FF" }}
-              rows={1}
-            />
+              <textarea
+                ref={textareaRef}
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
+                disabled={isExecuting}
+                placeholder="Ask SovereignX to analyze your workspace..."
+                className="flex-1 bg-transparent border-none outline-none resize-none text-[14px] text-white/80 min-h-[24px] leading-relaxed py-0.5"
+                style={{ fontFamily: SF, caretColor: "#00A3FF" }}
+                rows={1}
+              />
 
-            <button
-              onClick={handleExecute}
-              disabled={!canExecute}
-              className="shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200"
-              style={canExecute
-                ? { background: "#00A3FF", color: "#000", boxShadow: "0 0 20px rgba(0,163,255,0.4)" }
-                : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.2)", cursor: "not-allowed" }}
-            >
-              {isExecuting
-                ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/20 border-t-white/60 animate-spin" />
-                : <ArrowUp className="w-3.5 h-3.5" />}
-            </button>
-          </div>
-
-          {/* Bottom bar */}
-          <div className="flex items-center justify-between px-4 py-2.5" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-            <div className="flex items-center gap-1">
-              <button className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] text-white/25 hover:text-white/50 hover:bg-white/5 transition-all duration-150" style={{ fontFamily: SF }}>
-                <Zap className="w-3 h-3" />
-                <span>Quick actions</span>
+              <button
+                onClick={handleExecute}
+                disabled={!canExecute}
+                className="shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200"
+                style={canExecute
+                  ? { background: "#00A3FF", color: "#000", boxShadow: "0 0 20px rgba(0,163,255,0.4)" }
+                  : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.2)", cursor: "not-allowed" }}
+              >
+                {isExecuting
+                  ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/20 border-t-white/60 animate-spin" />
+                  : <ArrowUp className="w-3.5 h-3.5" />}
               </button>
             </div>
-            <div className="flex items-center gap-4">
-              <span className="text-[10px] text-white/15" style={{ fontFamily: "Geist Mono, 'SF Mono', monospace" }}>⌘↵ to execute</span>
-              <div className="flex items-center gap-1.5">
-                <Lock className="w-3 h-3 text-emerald-400/60" />
-                <span className="text-[10px] text-emerald-400/50" style={{ fontFamily: "Geist Mono, 'SF Mono', monospace" }}>Zero egress</span>
+
+            {/* Bottom bar */}
+            <div className="flex items-center justify-between px-4 py-2.5" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+              <div className="flex items-center gap-1">
+                <button className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] text-white/25 hover:text-white/50 hover:bg-white/5 transition-all duration-150" style={{ fontFamily: SF }}>
+                  <Zap className="w-3 h-3" />
+                  <span>Quick actions</span>
+                </button>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-[10px] text-white/15" style={{ fontFamily: "Geist Mono, 'SF Mono', monospace" }}>↵ to execute</span>
+                <div className="flex items-center gap-1.5">
+                  <Lock className="w-3 h-3 text-emerald-400/60" />
+                  <span className="text-[10px] text-emerald-400/50" style={{ fontFamily: "Geist Mono, 'SF Mono', monospace" }}>Zero egress</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
         </div>
       </div>
     </div>
@@ -1132,6 +1321,7 @@ function Composer({ onExecute, isExecuting }: { onExecute: (q: string, files: Fi
 // ─── IMAGE GEN STATE ────────────────────────────────────────────────────────────
 function ImageGenState({ payload, setPayload, isGenerating, generatedImage, onGenerate, showRatios, setShowRatios }: any) {
   const ref = useRef<HTMLDivElement>(null);
+  const [focused, setFocused] = useState(false);
   useEffect(() => {
     if (!ref.current) return;
     const ctx = gsap.context(() => {
@@ -1150,15 +1340,51 @@ function ImageGenState({ payload, setPayload, isGenerating, generatedImage, onGe
 
   return (
     <div ref={ref} className="flex-1 min-h-full flex flex-col items-center justify-center px-6 gap-6 py-12">
-      
+
       {generatedImage ? (
-        <div className="ig-panel w-full max-w-[512px] mx-auto rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_30px_rgba(0,163,255,0.15)] mb-2 bg-black/40 backdrop-blur-xl flex items-center justify-center min-h-[300px]">
-          <img src={generatedImage} alt="Generated Asset" className="w-full h-auto object-contain" />
+        <div className="ig-panel w-full max-w-[512px] mx-auto flex flex-col items-center gap-4 mb-2">
+          <div className="w-full rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_30px_rgba(0,163,255,0.15)] bg-black/40 backdrop-blur-xl flex items-center justify-center min-h-[300px]">
+            <img src={generatedImage} alt="Generated Asset" className="w-full h-auto object-contain" />
+          </div>
+          <button
+            onClick={() => {
+              const link = document.createElement('a');
+              link.href = generatedImage;
+              link.download = `sovereignx-image-${Date.now()}.png`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            }}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all duration-200 text-[13px] font-medium shadow-[0_0_20px_rgba(0,163,255,0.1)]"
+            style={{ fontFamily: SF }}
+          >
+            <Download className="w-4 h-4" />
+            Download Image
+          </button>
         </div>
       ) : isGenerating ? (
-        <div className="ig-panel w-full max-w-[512px] mx-auto rounded-2xl border border-white/10 shadow-[0_0_30px_rgba(0,163,255,0.15)] mb-2 bg-black/40 backdrop-blur-xl flex flex-col items-center justify-center min-h-[300px] gap-6">
-           <div className="w-12 h-12 rounded-full border-t-2 border-b-2 border-l-2 border-transparent border-t-[#00A3FF] border-b-[#00A3FF] animate-[spin_1.5s_linear_infinite]" />
-           <p className="text-[#00A3FF] animate-pulse text-sm font-mono tracking-widest uppercase">Synthesizing Asset...</p>
+        <div className="ig-panel flex flex-col items-center justify-center min-h-[340px] gap-2">
+          <GeneratingOrb
+            renderer="css"
+            size={240}
+            depth={1.0}
+            speed={2.0}
+            duration={2000}
+            stagger={100}
+            pop={1.15}
+            restOpacity={0.4}
+            textSize={1.2}
+            tracking={0}
+            text="Generating..."
+            showText={true}
+            highlightColor="#ffffff"
+            haloColor="#ad5fff"
+            coreColor="#471eec"
+            haloColorAlt="#d60a47"
+            coreColorAlt="#311e80"
+            textColor="#ffffff"
+            playback="play"
+          />
         </div>
       ) : (
         <div className="text-center max-w-lg mb-4">
@@ -1177,46 +1403,106 @@ function ImageGenState({ payload, setPayload, isGenerating, generatedImage, onGe
         </div>
       )}
 
-      <div className="ig-panel w-full max-w-[700px] bg-black/40 backdrop-blur-xl border border-white/10 rounded-[16px] p-4 flex flex-col shadow-[0_8px_32px_-8px_rgba(0,163,255,0.1),inset_0_0_0_1px_rgba(255,255,255,0.05)] transition-all focus-within:border-[#00A3FF]/40 focus-within:shadow-[0_8px_32px_-8px_rgba(0,163,255,0.2),inset_0_0_0_1px_rgba(0,163,255,0.2)]">
-        <textarea
-          value={payload.prompt}
-          onChange={(e) => setPayload({ ...payload, prompt: e.target.value })}
-          placeholder="Ask SovereignX to generate an image..."
-          className="w-full bg-transparent text-white/90 placeholder:text-white/30 text-[14px] resize-none outline-none min-h-[80px] p-2 leading-relaxed"
-          style={{ fontFamily: SF, caretColor: "#00A3FF" }}
-        />
-        
-        <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10 relative">
-          <div className="relative">
-            <button 
-              onClick={() => setShowRatios(!showRatios)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 border border-white/10 text-sm text-white/70 hover:border-white/30 transition-colors"
+      <div
+        className="ig-panel relative rounded-2xl p-[1px] group transition-all duration-300 w-full max-w-[700px] mx-auto mt-2"
+        style={{
+          boxShadow: focused
+            ? "0 20px 60px rgba(0,0,0,0.5), 0 0 50px -10px rgba(161, 161, 170, 0.3)"
+            : "0 20px 60px rgba(0,0,0,0.3), 0 0 30px -10px rgba(161, 161, 170, 0.15)",
+        }}
+      >
+        <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+          <div className="absolute inset-[-50%] animate-[spin_4s_linear_infinite]" style={{
+            background: "conic-gradient(from 0deg, transparent 0%, transparent 60%, rgba(161, 161, 170, 0.5) 80%, rgba(161, 161, 170, 1) 100%)",
+          }} />
+        </div>
+
+        <div className="absolute inset-0 rounded-2xl border border-white/5 pointer-events-none" />
+
+        <div
+          className="relative rounded-[15px] overflow-visible transition-all duration-300 z-10 h-full w-full"
+          style={{
+            background: focused ? "rgba(20,20,25,0.85)" : "rgba(10,10,12,0.75)",
+            boxShadow: focused
+              ? "inset 0 0 60px -10px rgba(161,161,170,0.2)"
+              : "inset 0 0 30px -10px rgba(161,161,170,0.1)",
+            backdropFilter: "blur(24px)",
+          }}
+        >
+          <div className="flex items-end gap-3 px-4 py-3.5">
+            <div className="relative shrink-0 mb-0.5 z-50">
+              <button
+                onClick={() => setShowRatios(!showRatios)}
+                className="flex items-center gap-1.5 text-white/25 hover:text-white/60 transition-colors duration-150"
+                title="Select Aspect Ratio"
+              >
+                <span className="text-[11px] font-medium" style={{ fontFamily: SF }}>{payload.ratio}</span>
+                <ChevronDown className="w-3 h-3" />
+              </button>
+              {showRatios && (
+                <div className="absolute bottom-full mb-2 left-0 w-20 bg-black/95 border border-white/10 rounded-lg overflow-hidden backdrop-blur-xl shadow-2xl">
+                  {RATIOS.map(r => (
+                    <button
+                      key={r}
+                      onClick={() => { setPayload({ ...payload, ratio: r }); setShowRatios(false); }}
+                      className="w-full text-center px-2 py-1.5 text-[12px] text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <textarea
+              value={payload.prompt}
+              onChange={(e) => setPayload({ ...payload, prompt: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  if (payload.prompt && !isGenerating) {
+                    onGenerate();
+                  }
+                }
+              }}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              disabled={isGenerating}
+              placeholder="Ask SovereignX to generate an image..."
+              className="flex-1 bg-transparent border-none outline-none resize-none text-[14px] text-white/80 min-h-[24px] leading-relaxed py-0.5"
+              style={{ fontFamily: SF, caretColor: "#00A3FF" }}
+              rows={1}
+            />
+
+            <button
+              onClick={onGenerate}
+              disabled={!payload.prompt || isGenerating}
+              className="shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200"
+              style={payload.prompt && !isGenerating
+                ? { background: "#00A3FF", color: "#000", boxShadow: "0 0 20px rgba(0,163,255,0.4)" }
+                : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.2)", cursor: "not-allowed" }}
             >
-              {payload.ratio} <ChevronDown className="w-3 h-3 text-white/50" />
+              {isGenerating
+                ? <span className="w-3.5 h-3.5 rounded-full border-2 border-black/20 border-t-black animate-spin" />
+                : <ArrowUp className="w-3.5 h-3.5" />}
             </button>
-            {showRatios && (
-              <div className="absolute bottom-full mb-2 left-0 w-24 bg-black/90 border border-white/10 rounded-lg overflow-hidden z-50 backdrop-blur-xl">
-                {RATIOS.map(r => (
-                  <button 
-                    key={r}
-                    onClick={() => { setPayload({ ...payload, ratio: r }); setShowRatios(false); }}
-                    className="w-full text-left px-3 py-2 text-sm text-white/70 hover:bg-white/10 transition-colors"
-                  >
-                    {r}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
-          <button
-            onClick={onGenerate}
-            disabled={!payload.prompt || isGenerating}
-            className="flex items-center gap-2 px-6 py-2 rounded-lg bg-[#00A3FF] hover:bg-[#00A3FF]/80 text-black font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(0,163,255,0.4)]"
-          >
-            {isGenerating ? "Generating..." : "Generate"}
-            {!isGenerating && <Sparkles className="w-4 h-4" />}
-          </button>
+          <div className="flex items-center justify-between px-4 py-2.5" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+            <div className="flex items-center gap-1">
+              <button className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] text-white/25 hover:text-white/50 hover:bg-white/5 transition-all duration-150" style={{ fontFamily: SF }}>
+                <Image className="w-3 h-3" />
+                <span>Image Engine</span>
+              </button>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-[10px] text-white/15" style={{ fontFamily: "Geist Mono, 'SF Mono', monospace" }}>↵ to generate</span>
+              <div className="flex items-center gap-1.5">
+                <Lock className="w-3 h-3 text-emerald-400/60" />
+                <span className="text-[10px] text-emerald-400/50" style={{ fontFamily: "Geist Mono, 'SF Mono', monospace" }}>Local GPU</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1229,11 +1515,10 @@ function ImageGenState({ payload, setPayload, isGenerating, generatedImage, onGe
               <button
                 key={style}
                 onClick={() => setPayload({ ...payload, style: isActive ? "" : style })}
-                className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all border ${
-                  isActive 
-                    ? "bg-[#00A3FF]/10 text-[#00A3FF] border-[#00A3FF]/50 shadow-[0_0_15px_rgba(0,163,255,0.2)]" 
+                className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all border ${isActive
+                    ? "bg-[#00A3FF]/10 text-[#00A3FF] border-[#00A3FF]/50 shadow-[0_0_15px_rgba(0,163,255,0.2)]"
                     : "bg-black/40 text-white/60 border-white/10 hover:border-white/30 hover:text-white/90"
-                }`}
+                  }`}
               >
                 {style}
               </button>
@@ -1274,6 +1559,23 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
     };
     fetchHistory();
   }, [messages.length]); // refetch when messages change (new chat saved)
+
+  const handleDeleteHistory = useCallback(async (id: string) => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_AI_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiUrl}/api/v1/history/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setHistoryList(prev => prev.filter(h => h.session_id !== id));
+        if (sessionId === id) {
+          // Optional: clear current session if it was the one deleted
+          setSessionId("sess_" + Date.now().toString());
+          setMessages([]);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to delete history", err);
+    }
+  }, [sessionId]);
 
   const handleGenerateImage = async () => {
     if (!imgPrompt) return;
@@ -1317,7 +1619,7 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
 
   useEffect(() => { scrollToBottom(); }, [messages, execStatus, scrollToBottom]);
 
-      const handleHistoryClick = useCallback(async (id: string) => {
+  const handleHistoryClick = useCallback(async (id: string) => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_AI_API_URL || "http://localhost:8000";
       const res = await fetch(apiUrl + "/api/v1/history/" + id);
@@ -1344,7 +1646,7 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
     setMessages([]); setExecStatus("idle"); setShowArtifacts(false);
   }, []);
 
-    const handleExecute = useCallback(async (query: string, files: File[]) => {
+  const handleExecute = useCallback(async (query: string, files: File[]) => {
     if (!["idle", "completed", "error"].includes(execStatus)) return;
 
     let base64Image = undefined;
@@ -1386,11 +1688,11 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
       const response = await fetch(apiUrl + "/api/v1/agent-stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-            prompt: query, 
-            session_id: sessionId,
-            active_filename: activeFilename,
-            image_data: base64Image
+        body: JSON.stringify({
+          prompt: query,
+          session_id: sessionId,
+          active_filename: activeFilename,
+          image_data: base64Image
         }),
       });
 
@@ -1431,7 +1733,7 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
                   if (m.id === aiMsgId) {
                     const currentSteps = m.steps || [];
                     const newSteps = [...currentSteps];
-                    
+
                     if (parsed.step !== undefined) {
                       const stepIndex = newSteps.findIndex(s => s.step === parsed.step);
                       if (stepIndex >= 0) {
@@ -1440,7 +1742,7 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
                         newSteps.push(parsed);
                       }
                     }
-                    
+
                     let newContent = m.content;
                     if (parsed.final_summary) {
                       newContent = parsed.final_summary;
@@ -1485,16 +1787,16 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
         `}</style>
         <div
           className="absolute top-[-20%] left-[10%] w-[800px] h-[800px] rounded-full"
-          style={{ 
-            background: "radial-gradient(circle, rgba(161,161,170,0.06) 0%, transparent 60%)", 
+          style={{
+            background: "radial-gradient(circle, rgba(161,161,170,0.06) 0%, transparent 60%)",
             filter: "blur(80px)",
             animation: "float-1 20s ease-in-out infinite"
           }}
         />
         <div
           className="absolute bottom-[-20%] right-[10%] w-[600px] h-[600px] rounded-full"
-          style={{ 
-            background: "radial-gradient(circle, rgba(161,161,170,0.05) 0%, transparent 60%)", 
+          style={{
+            background: "radial-gradient(circle, rgba(161,161,170,0.05) 0%, transparent 60%)",
             filter: "blur(60px)",
             animation: "float-2 25s ease-in-out infinite"
           }}
@@ -1503,13 +1805,13 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
 
       {/* Mobile Overlay */}
       {!sidebarCollapsed && (
-        <div 
+        <div
           className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[90]"
           onClick={() => setSidebarCollapsed(true)}
         />
       )}
 
-            <Sidebar
+      <Sidebar
         collapsed={sidebarCollapsed}
         setCollapsed={setSidebarCollapsed}
         user={user}
@@ -1521,6 +1823,7 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         onHistoryClick={handleHistoryClick}
+        onDeleteHistory={handleDeleteHistory}
       />
 
       {/* Main — does NOT scroll, it's a fixed layout */}
@@ -1533,7 +1836,7 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
         <div className="flex-1 flex flex-col overflow-hidden">
           {activeMode === "image" ? (
             <div data-lenis-prevent="true" className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.08) transparent" }}>
-              <ImageGenState 
+              <ImageGenState
                 payload={{ prompt: imgPrompt, ratio: imgRatio, style: imgStyle }}
                 setPayload={(p: any) => { setImgPrompt(p.prompt); setImgRatio(p.ratio); setImgStyle(p.style); }}
                 isGenerating={isGenerating}

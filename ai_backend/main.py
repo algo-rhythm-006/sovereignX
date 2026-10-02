@@ -155,14 +155,15 @@ async def get_telemetry():
     last_net_bytes_recv = net_io.bytes_recv
     last_net_bytes_sent = net_io.bytes_sent
     
-    # Check Ollama and models just for keeping existing healthchecks alive, if needed.
-    # We will return the explicitly requested fields.
+    # Check Ollama health
+    ollama_online = await ollama_client.check_health()
     status = "air_gapped" if wan_egress_kbs < 5.0 else "leakage_detected"
     
     return {
         "wan_ingress_kbs": wan_ingress_kbs,
         "wan_egress_kbs": wan_egress_kbs,
-        "status": status
+        "status": status,
+        "ollama_online": ollama_online
     }
 
 
@@ -1052,7 +1053,11 @@ async def agent_stream(req: TaskRequest):
         if session_id:
             try:
                 sess = history_db.get_session(session_id)
-                title = sess["title"] if (sess and sess.get("title")) else "New Session"
+                if sess and sess.get("title") and sess.get("title") != "New Session":
+                    title = sess["title"]
+                else:
+                    words = prompt.split()
+                    title = " ".join(words[:4]) + ("..." if len(words) > 4 else "")
                 chat_history.append({"role": "user", "content": prompt})
                 # For collaborative or sandbox, summary_text might be defined. Fallback to answer_text.
                 final_val = locals().get("summary_text", locals().get("answer_text", "Task completed."))
@@ -1074,6 +1079,14 @@ async def get_history_session(session_id: str):
     if not sess:
         raise HTTPException(status_code=404, detail="Session not found")
     return sess
+
+@app.delete("/api/v1/history/{session_id}")
+async def delete_history_session(session_id: str):
+    sess = history_db.get_session(session_id)
+    if not sess:
+        raise HTTPException(status_code=404, detail="Session not found")
+    history_db.delete_session(session_id)
+    return {"status": "success", "message": "Session deleted"}
 
 async def auto_name_session(prompt: str, session_id: str):
     try:
