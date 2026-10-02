@@ -572,8 +572,20 @@ async def agent_stream(req: TaskRequest):
             model_prompt = prompt   # no context injection for code/diagram tasks
         elif intent_category == "code_math":
             if active_filename:
-                file_path = os.path.join(KB_DIR, active_filename).replace("\\", "\\\\")
-                model_prompt = f"User Prompt: {prompt}\n\nData Source File: '{file_path}'\n\nWrite a Python script to analyze this data file. You must output the raw python script wrapped in ```python ... ``` tags. Load the file using pandas or appropriate library."
+                file_path_raw = os.path.join(KB_DIR, active_filename)
+                file_path = file_path_raw.replace("\\", "\\\\")
+                preview = ""
+                try:
+                    import pandas as pd
+                    if active_filename.endswith(".csv"):
+                        df_preview = pd.read_csv(file_path_raw, nrows=3)
+                        preview = f"\n\nData Columns & Preview:\n{df_preview.to_markdown()}"
+                    elif active_filename.endswith((".xls", ".xlsx")):
+                        df_preview = pd.read_excel(file_path_raw, nrows=3)
+                        preview = f"\n\nData Columns & Preview:\n{df_preview.to_markdown()}"
+                except Exception as e:
+                    pass
+                model_prompt = f"User Prompt: {prompt}\n\nData Source File: '{file_path}'{preview}\n\nWrite a Python script to analyze this data file. You must output the raw python script wrapped in ```python ... ``` tags. Load the file using pandas or appropriate library."
             else:
                 model_prompt = f"{prompt}\n\nWrite a Python script to perform this calculation. You must output the raw python script wrapped in ```python ... ``` tags."
         else:
