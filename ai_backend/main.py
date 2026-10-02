@@ -1035,7 +1035,7 @@ async def agent_stream(req: TaskRequest):
             yield f"data: {json.dumps(p4)}\n\n"
             await asyncio.sleep(0.8)
 
-                        stdout_log = calc_result.get('tee_stdout', '')
+            stdout_log = calc_result.get('tee_stdout', '')
             error_log = calc_result.get('error', '')
             
             output_snippet = ""
