@@ -16,8 +16,8 @@ for p in [PARENT_DIR, CURR_DIR]:
         sys.path.insert(0, p)
 
 try:
-    from backend.tools import SecureEnclaveExecutor, DeliverableSynthesizer
-    from backend.ollama_client import OllamaClient
+    from ai_backend.tools import SecureEnclaveExecutor, DeliverableSynthesizer
+    from ai_backend.ollama_client import OllamaClient
 except ImportError:
     from tools import SecureEnclaveExecutor, DeliverableSynthesizer
     from ollama_client import OllamaClient
