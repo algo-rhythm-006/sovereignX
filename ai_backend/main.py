@@ -589,11 +589,7 @@ async def agent_stream(req: TaskRequest):
                             tbl = pdf.pages[0].extract_table()
                             if tbl and len(tbl) > 1:
                                 df_preview = pd.DataFrame(tbl[1:4], columns=tbl[0])
-                                preview = f"
-
-Exact PDF Table Columns: {list(df_preview.columns)}
-Data Preview:
-{df_preview.to_markdown()}"
+                                preview = f"\n\nExact PDF Table Columns: {list(df_preview.columns)}\nData Preview:\n{df_preview.to_markdown()}"
 
                 except Exception as e:
                     pass
