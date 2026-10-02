@@ -585,7 +585,7 @@ async def agent_stream(req: TaskRequest):
                         preview = f"\n\nExact Pandas Columns: {list(df_preview.columns)}\nData Preview:\n{df_preview.to_markdown()}"
                 except Exception as e:
                     pass
-                model_prompt = f"User Prompt: {prompt}\n\nData Source File: '{file_path}'{preview}\n\nWrite a Python script to analyze this data file. You must output the raw python script wrapped in ```python ... ``` tags. Load the file using pandas or appropriate library."
+                model_prompt = f"User Prompt: {prompt}\n\nData Source File: '{file_path}'{preview}\n\nWrite a Python script to analyze this data file. You must output the raw python script wrapped in ```python ... ``` tags. Load the file using pandas (for csv/excel) or pdfplumber (for pdf tables) and analyze it."
             else:
                 model_prompt = f"{prompt}\n\nWrite a Python script to perform this calculation. You must output the raw python script wrapped in ```python ... ``` tags."
         else:
