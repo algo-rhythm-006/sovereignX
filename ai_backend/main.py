@@ -583,9 +583,21 @@ async def agent_stream(req: TaskRequest):
                     elif active_filename.endswith((".xls", ".xlsx")):
                         df_preview = pd.read_excel(file_path_raw, nrows=3)
                         preview = f"\n\nExact Pandas Columns: {list(df_preview.columns)}\nData Preview:\n{df_preview.to_markdown()}"
+                    elif active_filename.endswith(".pdf"):
+                        import pdfplumber
+                        with pdfplumber.open(file_path_raw) as pdf:
+                            tbl = pdf.pages[0].extract_table()
+                            if tbl and len(tbl) > 1:
+                                df_preview = pd.DataFrame(tbl[1:4], columns=tbl[0])
+                                preview = f"
+
+Exact PDF Table Columns: {list(df_preview.columns)}
+Data Preview:
+{df_preview.to_markdown()}"
+
                 except Exception as e:
                     pass
-                model_prompt = f"User Prompt: {prompt}\n\nData Source File: '{file_path}'{preview}\n\nWrite a Python script to analyze this data file. You must output the raw python script wrapped in ```python ... ``` tags. Load the file using pandas (for csv/excel) or pdfplumber (for pdf tables) and analyze it."
+                model_prompt = f"User Prompt: {prompt}\n\nData Source File: '{file_path}'{preview}\n\nWrite a Python script to analyze this data file. You must output the raw python script wrapped in ```python ... ``` tags. Load the file using pandas. If it is a PDF, MUST use this exact code to load it into pandas: import pdfplumber, pandas as pd\nwith pdfplumber.open(file_path) as pdf:\n    tbl = pdf.pages[0].extract_table()\n    df = pd.DataFrame(tbl[1:], columns=tbl[0]) then analyze df. Do not use string splitting on text."
             else:
                 model_prompt = f"{prompt}\n\nWrite a Python script to perform this calculation. You must output the raw python script wrapped in ```python ... ``` tags."
         else:
