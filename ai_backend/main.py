@@ -573,9 +573,9 @@ async def agent_stream(req: TaskRequest):
         elif intent_category == "code_math":
             if active_filename:
                 file_path = os.path.join(KB_DIR, active_filename).replace("\\", "\\\\")
-                model_prompt = f"User Prompt: {prompt}\n\nData Source File: '{file_path}'\n\nWrite a Python script to analyze this data file. You must output the raw python script wrapped in `python ... `` tags. Load the file using pandas or appropriate library."
+                model_prompt = f"User Prompt: {prompt}\n\nData Source File: '{file_path}'\n\nWrite a Python script to analyze this data file. You must output the raw python script wrapped in ```python ... ``` tags. Load the file using pandas or appropriate library."
             else:
-                model_prompt = f"{prompt}\n\nWrite a Python script to perform this calculation. You must output the raw python script wrapped in `python ... `` tags."
+                model_prompt = f"{prompt}\n\nWrite a Python script to perform this calculation. You must output the raw python script wrapped in ```python ... ``` tags."
         else:
             model_prompt = prompt   # context is already in sys_prompt above
 
@@ -982,7 +982,7 @@ async def agent_stream(req: TaskRequest):
             await asyncio.sleep(0.5)
 
             import re
-            code_match = re.search(r'`(?:python|java|c\+\+|cpp|c|javascript|js|go|rust)?\s*(.*?)\s*`', answer_text, re.DOTALL | re.IGNORECASE)
+            code_match = re.search(r'```(?:python|java|c\+\+|cpp|c|javascript|js|go|rust)?\s*(.*?)\s*```', answer_text, re.DOTALL | re.IGNORECASE)
             if code_match:
                 executed_code_block = code_match.group(1).strip()
             else:
