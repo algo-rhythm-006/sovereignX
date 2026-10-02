@@ -8,7 +8,7 @@ logger = logging.getLogger("sovereign_workbench.ollama_client")
 class OllamaClient:
     def __init__(self, base_url: str = "http://localhost:11434"):
         self.base_url = base_url.rstrip("/")
-        self.client = httpx.AsyncClient(timeout=60.0)
+        self.client = httpx.AsyncClient(timeout=120.0)
 
     async def check_health(self) -> bool:
         """Check if local Ollama service is reachable."""

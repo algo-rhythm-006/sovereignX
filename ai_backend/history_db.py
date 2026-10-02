@@ -64,4 +64,11 @@ def update_session_title(session_id: str, title: str):
     conn.commit()
     conn.close()
 
+def delete_session(session_id: str):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM sessions WHERE session_id = ?', (session_id,))
+    conn.commit()
+    conn.close()
+
 init_db()

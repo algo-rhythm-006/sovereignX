@@ -19,7 +19,7 @@ export async function sendOtpEmail(email: string, otp: string): Promise<{ succes
 
   try {
     const data = await resend.emails.send({
-      from: `SovereignX Auth <${fromEmail}>`,
+      from: fromEmail.includes('<') ? fromEmail : `SovereignX Auth <${fromEmail}>`,
       to: [email],
       subject: `Your SovereignX Verification Code: ${otp}`,
       html: `
