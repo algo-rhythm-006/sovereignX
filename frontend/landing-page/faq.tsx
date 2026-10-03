@@ -172,8 +172,20 @@ export default function FaqSection() {
                             </span>
                             <div className="w-12 h-[1px] bg-white/20" />
                         </div>
-                        <h2 className="text-[clamp(3rem,5vw,4.5rem)] font-bold leading-[0.95] tracking-[-0.03em] text-white/95">
-                            Built for AI that <br/>stays under your control.
+                        <style dangerouslySetInnerHTML={{__html: `
+                          @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
+                        `}} />
+                        <h2 
+                          className="text-4xl md:text-5xl lg:text-[56px] font-bold leading-[1.15] tracking-tight text-white/90"
+                          style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}
+                        >
+                            Built for AI that stays under your 
+                            <span 
+                              className="inline-block mx-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"
+                              style={{ fontFamily: '"Great Vibes", cursive', fontWeight: '400', fontSize: '1.45em', color: '#ffffff' }}
+                            >
+                              control.
+                            </span>
                         </h2>
                     </div>
                     <p className="text-lg text-white/50 max-w-sm lg:pb-2">

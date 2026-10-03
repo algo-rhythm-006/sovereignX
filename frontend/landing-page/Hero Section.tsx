@@ -5,6 +5,7 @@ import { ShieldCheck } from "lucide-react";
 import ShimmerText from "@/components/ui/shimmer-text";
 import { LiquidMetalButton } from "@/components/ui/liquid-metal-border";
 import { LiquidButton } from "@/components/ui/liquid-glass-card";
+import Link from "next/link";
 
 interface HeroSectionProps {
   isMuted: boolean;
@@ -105,9 +106,9 @@ export function HeroSection({ isMuted, volume, loaderDone }: HeroSectionProps) {
           className="relative z-10 mb-8 max-w-[26rem] text-balance text-center text-[clamp(1.5rem,5vw,2.25rem)] font-semibold leading-[1.15] tracking-tight text-white sm:max-w-none sm:text-[clamp(2.5rem,4vw,4rem)] drop-shadow-2xl"
           style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}
         >
-          <span className="block sm:whitespace-nowrap pb-1 hero-h1-1 opacity-0">The schedule management</span>
+          <span className="block sm:whitespace-nowrap pb-1 hero-h1-1 opacity-0">Intelligence Without Exposure.</span>
           <span className="block bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent sm:whitespace-nowrap drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] pb-2 hero-h1-2 opacity-0">
-            system for autonomous agents
+            Execution Without Compromise.
           </span>
         </h1>
 
@@ -116,22 +117,26 @@ export function HeroSection({ isMuted, volume, loaderDone }: HeroSectionProps) {
           className="text-white/60 text-base md:text-lg font-light max-w-3xl mx-auto mb-10 leading-relaxed flex flex-col items-center tracking-wide hero-sub opacity-0"
           style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}
         >
-          <span className="block sm:whitespace-nowrap">Coordinate work across every system, trigger, and agent.</span>
-          <span className="block sm:whitespace-nowrap">Durable context keeps every run informed and in control.</span>
+          <span className="block sm:whitespace-nowrap">Autonomous AI for your most confidential work.</span>
+          <span className="block sm:whitespace-nowrap">Run agents, models, and workflows entirely within your infrastructure.</span>
         </p>
 
         {/* Call to Action */}
         <div className="flex flex-col sm:flex-row w-full items-center justify-center gap-6">
           <div className="hero-cta-btn opacity-0">
-            <LiquidButton 
-              liquidVariant="ghost" 
-              className="w-[170px] h-[52px] rounded-full bg-black/20 hover:bg-black/40 border border-white/10 text-white/70 hover:text-white transition-colors cursor-pointer text-base font-medium shadow-[0_0_15px_rgba(255,255,255,0.05)] backdrop-blur-md"
-            >
-              View Docs
-            </LiquidButton>
+            <Link href="/docs" target="_blank" rel="noopener noreferrer">
+              <LiquidButton 
+                liquidVariant="ghost" 
+                className="w-[170px] h-[52px] rounded-full bg-black/20 hover:bg-black/40 border border-white/10 text-white/70 hover:text-white transition-colors cursor-pointer text-base font-medium shadow-[0_0_15px_rgba(255,255,255,0.05)] backdrop-blur-md"
+              >
+                View Docs
+              </LiquidButton>
+            </Link>
           </div>
           <div className="hero-cta-btn opacity-0">
-            <LiquidMetalButton label="Get Started" viewMode="text" />
+            <Link href="/auth">
+              <LiquidMetalButton label="Get Started" viewMode="text" />
+            </Link>
           </div>
         </div>
         

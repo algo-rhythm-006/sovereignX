@@ -118,9 +118,20 @@ export default function PricingSection() {
           <span className="text-xs font-semibold tracking-widest uppercase text-white/90 relative z-10">Pricing</span>
         </div>
         
-        {/* Heading */}
-        <h2 className="pricing-header-el text-[36px] md:text-[42px] font-semibold leading-[1.15] tracking-tight mb-8 text-white opacity-0" style={{ fontFamily: APPLE_FONT }}>
-          Choose the right plan <br /> for your growth
+        <style dangerouslySetInnerHTML={{__html: `
+          @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
+        `}} />
+        <h2 
+          className="pricing-header-el text-4xl md:text-5xl lg:text-[56px] font-bold leading-[1.15] tracking-tight text-white/90 mb-8 opacity-0"
+          style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}
+        >
+          Choose the right plan for your
+          <span 
+            className="inline-block mx-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"
+            style={{ fontFamily: '"Great Vibes", cursive', fontWeight: '400', fontSize: '1.45em', color: '#ffffff' }}
+          >
+            growth
+          </span>
         </h2>
         
         {/* Toggle */}
