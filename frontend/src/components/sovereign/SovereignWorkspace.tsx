@@ -1338,6 +1338,14 @@ function ImageGenState({ payload, setPayload, isGenerating, generatedImage, onGe
   const RATIOS = ["1:1", "16:9", "9:16", "3:2", "4:3"];
   const STYLES = ["Photorealistic", "Technical Schematic", "Isometric", "Cyberpunk"];
 
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  useEffect(() => {
+    if (!textareaRef.current) return;
+    textareaRef.current.style.height = "auto";
+    textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + "px";
+  }, [payload.prompt]);
+
   return (
     <div ref={ref} className="flex-1 min-h-full flex flex-col items-center justify-center px-6 gap-6 py-12">
 
@@ -1455,6 +1463,7 @@ function ImageGenState({ payload, setPayload, isGenerating, generatedImage, onGe
             </div>
 
             <textarea
+              ref={textareaRef}
               value={payload.prompt}
               onChange={(e) => setPayload({ ...payload, prompt: e.target.value })}
               onKeyDown={(e) => {
@@ -1469,7 +1478,7 @@ function ImageGenState({ payload, setPayload, isGenerating, generatedImage, onGe
               onBlur={() => setFocused(false)}
               disabled={isGenerating}
               placeholder="Ask SovereignX to generate an image..."
-              className="flex-1 bg-transparent border-none outline-none resize-none text-[14px] text-white/80 min-h-[24px] leading-relaxed py-0.5"
+              className="flex-1 bg-transparent border-none outline-none resize-none text-[14px] text-white/80 min-h-[24px] max-h-[200px] leading-relaxed py-0.5 overflow-y-auto"
               style={{ fontFamily: SF, caretColor: "#00A3FF" }}
               rows={1}
             />

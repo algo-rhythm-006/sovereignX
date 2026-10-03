@@ -9,13 +9,14 @@ import { LiquidMetalButton } from "@/components/ui/liquid-metal-border";
 import { LiquidGlassCard, LiquidButton } from "@/components/ui/liquid-glass-card";
 
 interface NavbarProps {
-  isMuted: boolean;
-  toggleMute: () => void;
-  volume: number;
-  onVolumeChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  isMuted?: boolean;
+  toggleMute?: () => void;
+  volume?: number;
+  onVolumeChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  navItems?: any[];
 }
 
-export function Navbar({ isMuted, toggleMute, volume, onVolumeChange }: NavbarProps) {
+export function Navbar({ isMuted = true, toggleMute = () => {}, volume = 0, onVolumeChange = () => {}, navItems }: NavbarProps) {
   const { scrollY } = useScroll();
   const [hidden, setHidden] = useState(false);
   const [showVolumeControl, setShowVolumeControl] = useState(false);
@@ -163,7 +164,7 @@ export function Navbar({ isMuted, toggleMute, volume, onVolumeChange }: NavbarPr
         </div>
 
         {/* MENU */}
-        <NavbarHams />
+        <NavbarHams navItems={navItems} />
       </div>
     </motion.nav>
   );

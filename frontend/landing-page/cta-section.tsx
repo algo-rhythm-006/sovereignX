@@ -147,15 +147,15 @@ export default function CtaSection() {
         {/* Content */}
         <div ref={textRef} className="relative z-10 flex flex-col items-start px-8 sm:px-12 md:px-16 py-14 w-full max-w-3xl gap-5">
           <h2 
-            className="text-white text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1]"
+            className="text-4xl md:text-5xl lg:text-[56px] font-bold leading-[1.15] tracking-tight text-white/90"
             style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}
           >
-            Ready to Build Something <br/>
+            Ready to Build Something
             <span 
-              className="mt-1 block drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]" 
-              style={{ fontFamily: '"Great Vibes", cursive', fontWeight: '400', fontSize: '1.25em', color: '#ffffff' }}
+              className="inline-block mx-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"
+              style={{ fontFamily: '"Great Vibes", cursive', fontWeight: '400', fontSize: '1.45em', color: '#ffffff' }}
             >
-              Great ?
+              Great?
             </span>
           </h2>
           

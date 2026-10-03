@@ -42,9 +42,18 @@ export default function BentoGrid() {
   return (
     <section ref={containerRef} className="relative w-full max-w-[1400px] mx-auto px-6 py-24 z-20 font-display">
       
+      <style dangerouslySetInnerHTML={{__html: `
+        @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
+      `}} />
       <div className="mb-20 text-center" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif' }}>
-        <h2 data-animate="fade-up" className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight">
-          Industrial-Grade Architecture
+        <h2 data-animate="fade-up" className="text-4xl md:text-5xl lg:text-[56px] font-bold leading-[1.15] tracking-tight text-white/90 mb-6">
+          Industrial-Grade 
+          <span 
+            className="inline-block mx-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"
+            style={{ fontFamily: '"Great Vibes", cursive', fontWeight: '400', fontSize: '1.45em', color: '#ffffff' }}
+          >
+            Architecture
+          </span>
         </h2>
         <p data-animate="fade-up" className="text-white/60 max-w-2xl mx-auto text-[17px] leading-relaxed font-medium">
           Secure, air-gapped, and deterministic by design. Our agentic stack operates in zero-trust environments with absolute control.
