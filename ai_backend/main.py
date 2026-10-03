@@ -118,6 +118,7 @@ class TaskRequest(BaseModel):
     active_filename:   Optional[str] = None
     session_id:        Optional[str] = None
     image_data:        Optional[str] = None
+    simulate_low_vram: Optional[bool] = False
 
     def resolved_prompt(self) -> str:
         """Returns whichever of prompt/query is non-empty, or empty string."""
@@ -472,6 +473,10 @@ async def agent_stream(req: TaskRequest):
         elif preset == "custom" and intent_category not in ["code_math", "vision_pid", "collaborative_multi_agent", "GENERAL_CODE_GEN"]:
             intent_category = "doc_synthesis"
             target_model    = "llama3.2:3b"
+
+        if req.simulate_low_vram:
+            target_model = "qwen2.5-coder:1.5b-q4_0"
+            vram_req = 1.5
 
         p1_done = {
             "step": 1,

@@ -1560,10 +1560,105 @@ function ImageGenState({ payload, setPayload, isGenerating, generatedImage, onGe
   );
 }
 
+// ─── MODEL ROUTER TOAST ────────────────────────────────────────────────────
+function ModelSuggestionToast({ onDismiss }: { onDismiss: () => void }) {
+  const [isVisible, setIsVisible] = useState(false);
+  const [activeModel, setActiveModel] = useState("llama3");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!isVisible) return null;
+
+  const models = [
+    { id: "llama3", name: "Llama 3.2 3B", desc: "Doc synthesis & RAG retrieval Q&A", badge: "ACTIVE" },
+    { id: "qwen_coder", name: "Qwen 2.5 Coder 3B", desc: "Code verification & formula analysis", badge: "STANDBY" },
+    { id: "qwen_vl", name: "Qwen 2.5 VL 3B", desc: "Vision parsing & image inspection", badge: "STANDBY" },
+  ];
+
+  return (
+    <div className="fixed bottom-6 right-6 z-[100] w-[420px] rounded-[24px] p-[1px] bg-gradient-to-b from-white/15 to-white/5 backdrop-blur-2xl shadow-[0_20px_80px_-20px_rgba(0,0,0,1)] animate-in slide-in-from-bottom-8 fade-in duration-700 ease-out">
+      <div className="absolute inset-0 bg-[#030406]/95 rounded-[24px]" />
+      
+      {/* Glow effects */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[60%] h-[1px] bg-gradient-to-r from-transparent via-[#00A3FF]/50 to-transparent" />
+      <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#00A3FF]/10 blur-3xl rounded-full pointer-events-none" />
+      
+      <div className="relative z-10 flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-white/[0.06]">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-[#00A3FF]/10 flex items-center justify-center border border-[#00A3FF]/20">
+              <Network className="w-4 h-4 text-[#00A3FF]" />
+            </div>
+            <div>
+              <h4 className="text-[14px] font-semibold text-white tracking-wide" style={{ fontFamily: SF }}>Model Router</h4>
+              <p className="text-[11px] text-[#00A3FF]/80 uppercase tracking-widest font-mono mt-0.5">Air-Gapped Network</p>
+            </div>
+          </div>
+          <button onClick={onDismiss} className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 text-white/40 hover:text-white hover:bg-white/10 transition-all">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-4 flex flex-col gap-2">
+          {models.map(model => {
+            const isActive = activeModel === model.id;
+            return (
+              <div
+                key={model.id}
+                onClick={() => setActiveModel(model.id)}
+                className={`relative p-4 rounded-[16px] cursor-pointer transition-all duration-300 group overflow-hidden border ${
+                  isActive 
+                    ? "bg-[#00A3FF]/[0.04] border-[#00A3FF]/20 shadow-[0_0_30px_rgba(0,163,255,0.05)]" 
+                    : "bg-white/[0.02] border-white/[0.04] hover:bg-white/[0.04] hover:border-white/10"
+                }`}
+              >
+                {isActive && (
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-[#00A3FF] shadow-[0_0_10px_rgba(0,163,255,1)]" />
+                    <div className="absolute top-0 right-0 w-[100px] h-[100px] bg-[#00A3FF]/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+                  </div>
+                )}
+                
+                <div className="flex items-start justify-between relative z-10">
+                  <div className="flex flex-col gap-1">
+                    <span className={`text-[14px] font-medium transition-colors ${isActive ? "text-white" : "text-white/70 group-hover:text-white/90"}`} style={{ fontFamily: SF }}>
+                      {model.name}
+                    </span>
+                    <span className={`text-[12px] leading-relaxed transition-colors ${isActive ? "text-white/60" : "text-white/30"}`} style={{ fontFamily: SF }}>
+                      {model.desc}
+                    </span>
+                  </div>
+                  
+                  {/* Badge */}
+                  <div 
+                    className={`px-2.5 py-1 rounded-md flex items-center justify-center text-[10px] font-bold tracking-widest uppercase font-mono transition-all duration-300 ${
+                      isActive
+                        ? "bg-[#00A3FF]/15 text-[#00A3FF] border border-[#00A3FF]/30 shadow-[0_0_15px_rgba(0,163,255,0.25)]" 
+                        : "bg-[#18181B] text-[#A1A1AA] border border-white/5 group-hover:bg-white/5 group-hover:text-white/50"
+                    }`}
+                  >
+                    {isActive ? "ACTIVE" : "STANDBY"}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN WORKSPACE ────────────────────────────────────────────────────────────
 export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeMode, setActiveMode] = useState<"chat" | "image">("chat");
+  const [showModelSuggestion, setShowModelSuggestion] = useState(true);
   const [imgPrompt, setImgPrompt] = useState("");
   const [imgRatio, setImgRatio] = useState("1:1");
   const [imgStyle, setImgStyle] = useState("");
@@ -1574,6 +1669,8 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
   const [sessionId, setSessionId] = useState<string>(() => "sess_" + Date.now().toString());
   const [historyList, setHistoryList] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [simulateLowVRAM, setSimulateLowVRAM] = useState(true);
+  const [showVramWarning, setShowVramWarning] = useState(true);
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -1735,7 +1832,8 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
           prompt: query,
           session_id: sessionId,
           active_filename: activeFilename,
-          image_data: base64Image
+          image_data: base64Image,
+          simulate_low_vram: simulateLowVRAM
         }),
       });
 
@@ -1815,6 +1913,71 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
 
   return (
     <div className="flex h-screen w-full overflow-hidden" style={{ background: "#050507", fontFamily: SF }}>
+
+      {/* Low VRAM Warning Modal */}
+      {simulateLowVRAM && showVramWarning && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xl">
+          <div className="relative w-full max-w-[500px] p-[1px] rounded-[24px] bg-gradient-to-b from-white/10 to-transparent overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] animate-in zoom-in-95 duration-500">
+            <div className="absolute inset-0 bg-[#030406]/90 backdrop-blur-3xl rounded-[24px]" />
+            <div className="relative z-10 p-8 flex flex-col items-center text-center">
+              
+              {/* Futuristic Eye Blob */}
+              <div className="relative w-24 h-24 mb-6 -mt-2">
+                <GeneratingOrb
+                  renderer="css"
+                  size={96}
+                  depth={1.0}
+                  speed={2.0}
+                  duration={2000}
+                  stagger={100}
+                  pop={1.15}
+                  restOpacity={0.8}
+                  showText={false}
+                  highlightColor="#ffffff"
+                  haloColor="#00A3FF"
+                  coreColor="#0066FF"
+                  haloColorAlt="#0044FF"
+                  coreColorAlt="#0022AA"
+                  playback="play"
+                />
+              </div>
+
+              <h3 className="text-[22px] font-semibold text-white tracking-tight mb-3" style={{ fontFamily: SF }}>Hardware Constraint Detected</h3>
+              <p className="text-[14px] text-white/50 leading-relaxed mb-6 max-w-[320px] mx-auto text-center" style={{ fontFamily: SF }}>
+                SovereignX detected &lt; 4GB available VRAM. Tasks are dynamically routed with CPU-offloading to maintain air-gapped security.
+              </p>
+              
+              {/* Badges */}
+              <div className="flex items-center justify-center gap-2 mb-8">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/80 font-mono text-[11px]">
+                  <Cpu className="w-3.5 h-3.5 text-[#00A3FF]" />
+                  <span>&lt; 4GB VRAM</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#00A3FF]/10 border border-[#00A3FF]/20 text-[#00A3FF] font-mono text-[11px] shadow-[inset_0_0_10px_rgba(0,163,255,0.1)]">
+                  <Network className="w-3.5 h-3.5" />
+                  <span>qwen2.5-coder:1.5b</span>
+                </div>
+              </div>
+              
+              <div className="w-full grid grid-cols-2 gap-3">
+                 <button
+                  onClick={() => setShowVramWarning(false)}
+                  className="w-full flex items-center justify-center px-4 py-3 rounded-xl text-[13px] font-medium text-white/60 bg-white/5 border border-white/10 hover:bg-white/10 hover:text-white transition-all duration-300"
+                >
+                  Ignore
+                </button>
+                <button
+                  onClick={() => setShowVramWarning(false)}
+                  className="w-full flex items-center justify-center px-4 py-3 rounded-xl text-[13px] font-medium text-black bg-[#00A3FF] hover:bg-[#33b5ff] transition-all duration-300 shadow-[0_0_20px_rgba(0,163,255,0.3)]"
+                >
+                  Acknowledge
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* Ambient background glow — animated atmosphere */}
       <div ref={bgRef} className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
@@ -1911,6 +2074,9 @@ export function SovereignWorkspace({ user, onLogout }: SovereignWorkspaceProps) 
 
         {activeMode === "chat" && <Composer onExecute={handleExecute} isExecuting={isExecuting} />}
       </div>
+      
+      {/* Global Toast Notifications */}
+      {showModelSuggestion && <ModelSuggestionToast onDismiss={() => setShowModelSuggestion(false)} />}
     </div>
   );
 }
